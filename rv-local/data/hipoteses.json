@@ -1,0 +1,29 @@
+[
+  {
+    "id": "H-EXEMPLO-1",
+    "titulo": "EXEMPLO: exportadoras sobem mais que o Ibovespa quando o dólar sobe",
+    "tese": "Receita em dólar e custo em real: dólar em alta favorece margem de SUZB3 e WEGE3 acima do índice.",
+    "teste": {
+      "tipo": "excesso_em_condicao",
+      "ativos": ["SUZB3", "WEGE3"],
+      "benchmark": "IBOV",
+      "condicao": {"serie": "USDBRL", "sinal": "alta", "limiar_pct": 0.3}
+    },
+    "muda_de_ideia_se": "3 testes aplicáveis seguidos com erro",
+    "arquivar_apos_falhas_consecutivas": 3,
+    "status": "ativa",
+    "criada_em": "2026-11-02",
+    "medicoes": []
+  },
+  {
+    "id": "H-EXEMPLO-2",
+    "titulo": "EXEMPLO: PETR4 acompanha o Brent em dias de movimento relevante",
+    "tese": "Em dias com Brent mexendo 1% ou mais, PETR4 fecha na mesma direção.",
+    "teste": {"tipo": "segue_driver", "ativo": "PETR4", "driver": "BRENT", "limiar_driver_pct": 1.0},
+    "muda_de_ideia_se": "3 testes aplicáveis seguidos com erro",
+    "arquivar_apos_falhas_consecutivas": 3,
+    "status": "ativa",
+    "criada_em": "2026-11-02",
+    "medicoes": []
+  }
+]

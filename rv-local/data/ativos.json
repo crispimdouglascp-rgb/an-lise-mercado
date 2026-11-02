@@ -1,0 +1,5 @@
+{
+  "PETR4": {"setor": "petroleo", "alvo": 42.0, "stop": 33.0, "tese_id": "H-EXEMPLO-2"},
+  "WEGE3": {"setor": "industria", "alvo": 48.0, "stop": 38.0, "tese_id": "H-EXEMPLO-1"},
+  "SUZB3": {"setor": "papel_celulose", "alvo": 60.0, "stop": 46.0, "tese_id": "H-EXEMPLO-1"}
+}

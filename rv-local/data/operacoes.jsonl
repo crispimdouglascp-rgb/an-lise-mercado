@@ -1,0 +1,5 @@
+# EXEMPLO FICTÍCIO. Apague estas linhas e registre sua carteira real.
+# Uma operação por linha, JSON. Nunca edite o passado: corrija com nova linha.
+{"id": "op-001", "data": "2026-11-02", "tipo": "aporte", "valor": 100000.0}
+{"id": "op-002", "data": "2026-11-02", "tipo": "compra", "ativo": "PETR4", "qtd": 300, "preco": 36.0, "custos": 5.0, "tese_id": "H-EXEMPLO-2", "gatilho": "Brent acima de 85", "horizonte": "3 meses"}
+{"id": "op-003", "data": "2026-11-02", "tipo": "compra", "ativo": "WEGE3", "qtd": 200, "preco": 42.0, "custos": 5.0, "tese_id": "H-EXEMPLO-1", "gatilho": "dólar acima de 5,60", "horizonte": "6 meses"}

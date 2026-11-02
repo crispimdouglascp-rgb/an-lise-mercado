@@ -1,0 +1,20 @@
+# Dias sem pregão na B3. ATENÇÃO: lista montada de memória, NÃO verificada
+# contra o calendário oficial da B3. Confira em b3.com.br (Calendário de
+# negociação) e corrija antes de confiar. Atualize todo ano.
+# A vigilância e a coleta pulam estas datas e fins de semana.
+
+dias = [
+  "2026-01-01",
+  "2026-02-16", "2026-02-17",   # Carnaval
+  "2026-04-03",                 # Sexta-feira Santa
+  "2026-04-21",                 # Tiradentes
+  "2026-05-01",
+  "2026-06-04",                 # Corpus Christi
+  "2026-09-07",
+  "2026-10-12",
+  "2026-11-02",                 # Finados
+  "2026-11-20",                 # Consciência Negra
+  "2026-12-24",
+  "2026-12-25",
+  "2026-12-31",
+]
