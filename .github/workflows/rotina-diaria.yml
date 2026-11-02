@@ -2,6 +2,7 @@ name: rotina-diaria
 # Horários em BRT (America/Sao_Paulo) convertidos para UTC (BRT = UTC-3, sem horário de verão).
 # 07:45 cobrança | 08:20 manhã | 09:40 flash | 18:00 coleta do fechamento | 18:05 números do dia
 # sexta 19:00 boletim semanal | dia 1º 08:00 boletim mensal e trimestral + fiscal
+# Feito para o repositório PRIVADO de dados (RVLOCAL_HOME = raiz dele), nunca para o repositório público.
 on:
   # AGENDAMENTO DESLIGADO (decisão D-2): religar quando `rvlocal testar-fontes` passar ao vivo.
   # schedule:
@@ -62,14 +63,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           case "${{ steps.etapa.outputs.nome }}" in
-            cobranca) python -m rvlocal cobranca ;;
+            cobranca) python -m rvlocal cobranca --todas ;;
             manha|flash|fechamento) python -m rvlocal coletar --modo "${{ steps.etapa.outputs.nome }}" ;;
-            numeros) python -m rvlocal fechar && python -m rvlocal boletim --tipo diario ;;
-            semanal) python -m rvlocal boletim --tipo semanal ;;
+            numeros) python -m rvlocal fechar --todas && python -m rvlocal boletim --tipo diario --todas ;;
+            semanal) python -m rvlocal boletim --tipo semanal --todas ;;
             mensal)
               D=$(date -u -d "yesterday" +%F)
-              python -m rvlocal boletim --tipo mensal --data "$D"
-              python -m rvlocal boletim --tipo trimestral --data "$D"
+              python -m rvlocal boletim --tipo mensal --data "$D" --todas
+              python -m rvlocal boletim --tipo trimestral --data "$D" --todas
               python -m rvlocal fiscal --data "$D" ;;
             *) echo "etapa desconhecida"; exit 1 ;;
           esac

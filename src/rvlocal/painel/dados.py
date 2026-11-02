@@ -6,12 +6,12 @@ from datetime import date
 
 from .. import (boletim, cobranca, decisoes, desempenho, diario, fiscal, hipoteses, instrumentos, livros, mesa,
                 razao, series, teses)
-from ..util import config, hoje, ler_json, p_gerado, raiz
+from ..util import config, hoje, ler_json, p_gerado, raiz_base
 from . import graficos as G
 
 
 def eh_demo() -> bool:
-    return (raiz() / "DADOS-DEMO.md").exists() or any(
+    return (raiz_base() / "DADOS-DEMO.md").exists() or any(
         r.get("natureza") == "demo" for r in livros.ler("operacoes")[:5])
 
 
@@ -233,3 +233,90 @@ def relatorios(boletim_id: str | None = None) -> dict:
             "evolucao": G.notas(tipos["semanal"][-26:]),
             "fiscal": fiscal.apurar(ops, ref[:7])[::-1][:6],
             "recaps": [(n, (p_gerado("recaps") / n).read_text(encoding="utf-8")) for n in recaps[:3]]}
+
+
+# ====================================================================== telas globais
+
+def carteiras_tela() -> dict:
+    """Todas as carteiras lado a lado: mesmo critério, mesmos preços, mesmo boletim."""
+    import math
+    from .. import carteiras as _c
+    from ..util import usar_carteira
+    linhas, curvas = [], []
+    for c in _c.listar():
+        with usar_carteira(c["id"]):
+            ds = diario.carregar_diarios()
+            sem = boletim.historico("semanal")
+            ult = ds[-1] if ds else {}
+            rk = (ler_json(diario.p_risco(ult["data"])) or {}) if ult else {}
+            m = mesa.estado(ult.get("data")) if ult else []
+            mes_ini = ult["data"][:8] + "01" if ult else None
+            ds_mes = [x for x in ds if mes_ini and x["data"] >= mes_ini]
+        bench = []
+        fech = series.carregar()
+        b = c.get("benchmark", "IBOV")
+        if ds and b in fech.get(ds[0]["data"], {}):
+            base = fech[ds[0]["data"]][b]
+            bench = [fech[x["data"]][b] / base * 100 - 100 for x in ds if b in fech.get(x["data"], {})]
+        vol = (rk.get("volatilidade") or {}).get("anual_60d_pct") if isinstance(rk.get("volatilidade"), dict) else None
+        linhas.append({
+            "c": c, "ult": ult, "n_pos": len(ult.get("posicoes", [])),
+            "acum": _acum(ds), "mes": _acum(ds_mes), "bench": bench[-1] if bench else None,
+            "vol": vol, "dd": (rk.get("drawdown_carteira") or {}).get("atual_pct"),
+            "dd_max": (rk.get("drawdown_carteira") or {}).get("maximo_pct"),
+            "boletim": sem[-1] if sem else None, "notas": [b_["nota_final"] for b_ in sem[-8:]],
+            "abertas": sum(1 for a in m if a["status"] == "aberto"),
+            "vencidas": sum(1 for a in m if a["status"] == "vencido"),
+            "primeiro": ds[0]["data"] if ds else None,
+            "ds": ds,
+        })
+    # curvas a partir do início comum (o primeiro dia em que todas já existem)
+    com_dados = [l for l in linhas if len(l["ds"]) > 1]
+    cores = ["var(--s1)", "var(--s3)", "var(--s2)", "var(--s4)", "var(--s5)", "var(--s6)"]
+    grafico = ""
+    if com_dados:
+        inicio = max(l["primeiro"] for l in com_dados)
+        for k, l in enumerate(com_dados):
+            ds = [x for x in l["ds"] if x["data"] >= inicio]
+            curvas.append({"nome": l["c"]["nome"], "pontos": [(inicio, 100.0)] + desempenho.curva(ds[1:]),
+                           "cor": cores[k % len(cores)], "grossa": l["c"]["id"] == "principal"})
+        grafico = G.linhas([x for x in curvas if len(x["pontos"]) > 1])
+        inicio_txt = inicio
+    else:
+        inicio_txt = None
+    for l in linhas:
+        l.pop("ds")
+    return {**comum(), "linhas": linhas, "grafico": grafico, "inicio": inicio_txt}
+
+
+def ativos_tela() -> dict:
+    """O universo de ativos: preço, retornos, volatilidade e em quais carteiras está, com que peso."""
+    import math
+    from .. import carteiras as _c, instrumentos
+    from ..util import usar_carteira
+    cad = instrumentos.carregar()
+    fech = series.carregar()
+    posse: dict[str, list] = {}
+    fichas: dict[str, list] = {}
+    for c in _c.listar():
+        with usar_carteira(c["id"]):
+            ult = ultimo_diario() or {}
+            for p in ult.get("posicoes", []):
+                posse.setdefault(p["ativo"], []).append({"carteira": c["id"], "nome": c["nome"], "peso": p.get("peso_pct"),
+                                                          "pl": p.get("pl_pct")})
+            for a, f in teses.todas_vigentes().items():
+                fichas.setdefault(a, []).append({"carteira": c["id"], "rating": f.get("rating"),
+                                                 "alvo": f.get("alvo"), "preco_justo": f.get("preco_justo")})
+
+    def ret(s, n):
+        return (s[-1][1] / s[-1 - n][1] - 1) * 100 if len(s) > n and s[-1 - n][1] else None
+
+    linhas = []
+    for t, i in sorted(cad.items(), key=lambda x: (x[1].get("classe", ""), x[0])):
+        s = series.serie(fech, t)
+        sig = series.sigma_pct(fech, t)
+        linhas.append({"t": t, "i": instrumentos.info(t, cad), "preco": s[-1][1] if s else None,
+                       "data": s[-1][0] if s else None, "r1": ret(s, 1), "r21": ret(s, 21), "r63": ret(s, 63),
+                       "r252": ret(s, 252), "vol": sig * math.sqrt(252) if sig else None, "obs": len(s),
+                       "posse": posse.get(t, []), "fichas": fichas.get(t, [])})
+    return {**comum(), "linhas": linhas, "n_monitorados": sum(1 for x in cad.values() if x.get("monitorar"))}

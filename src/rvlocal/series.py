@@ -12,7 +12,7 @@ import sqlite3
 import statistics
 from contextlib import closing
 
-from .util import agora, ler_json, raiz
+from .util import agora, ler_json, raiz_base
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS precos_diarios (
@@ -26,7 +26,8 @@ _cache: dict = {}
 
 
 def caminho():
-    return raiz() / "data" / "mercado.db"
+    """Um só banco de preços para todas as carteiras."""
+    return raiz_base() / "data" / "mercado.db"
 
 
 def conectar() -> sqlite3.Connection:

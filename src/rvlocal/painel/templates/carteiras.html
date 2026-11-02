@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block titulo %}Carteiras{% endblock %}
+{% block corpo %}
+<p class="rotulo">Carteiras · comparação</p><h1>Mesmo critério para todas as carteiras.</h1>
+<p class="sub">Sua carteira, as de clientes e as recomendadas por analistas, medidas pelo mesmo código: mesmos preços, mesmo TWR, mesmo boletim. Carteira simulada não é dinheiro real.</p>
+{% if grafico %}<div class="cartao" style="margin-top:12px"><h2>Curvas desde {{ inicio|data }} (base 100)</h2>{{ grafico|safe }}</div>{% endif %}
+<div class="cartao tabela" style="margin-top:14px"><table>
+<tr><th>Carteira</th><th>Tipo</th><th class="n">Patrimônio</th><th class="n">Acumulado</th><th class="n">Mês</th><th class="n">Benchmark</th>
+<th class="n">Vol. 60d</th><th class="n">Drawdown</th><th class="n">Posições</th><th>Nota semanal</th><th>Mesa</th></tr>
+{% for l in linhas %}<tr>
+<td><a href="{{ link('dashboard', l.c.id) }}"><b>{{ l.c.nome }}</b></a><div class="sub">{{ l.c.id }}{% if l.c.fonte %} · {{ l.c.fonte }}{% endif %}</div></td>
+<td><span class="pilula {{ 'sim' if l.c.natureza == 'real' else 'media' if l.c.natureza == 'simulada' else '' }}">{{ l.c.tipo }} · {{ l.c.natureza }}</span></td>
+<td class="n">{{ l.ult.patrimonio|brl(0) if l.ult else '—' }}</td>
+<td class="n {{ l.acum|cls }}">{{ l.acum|pct }}</td><td class="n {{ l.mes|cls }}">{{ l.mes|pct }}</td>
+<td class="n">{{ l.c.benchmark }} {{ l.bench|pct }}</td>
+<td class="n">{{ (l.vol|num(1) ~ '%') if l.vol is not none else '—' }}</td>
+<td class="n {{ l.dd|cls }}">{{ l.dd|pct }}<div class="sub">máx {{ l.dd_max|pct }}</div></td>
+<td class="n">{{ l.n_pos }}</td>
+<td>{% if l.boletim %}<b>{{ l.boletim.letra }}</b> {{ l.boletim.nota_final|num(2) }}
+  <div class="mini" title="últimas notas semanais">{% for n in l.notas %}<span style="height:{{ (n / 5 * 100)|round|int }}%"></span>{% endfor %}</div>{% else %}—{% endif %}</td>
+<td>{% if l.vencidas %}<span class="pilula nao">{{ l.vencidas }} vencida(s)</span>{% elif l.abertas %}<span class="pilula media">{{ l.abertas }} aberta(s)</span>{% else %}<span class="pilula sim">em dia</span>{% endif %}</td>
+</tr>{% endfor %}</table></div>
+<div class="grade g3" style="margin-top:14px">
+  <div class="cartao"><h2>Própria</h2><p class="ev">A sua carteira real. Dados no seu computador, fora do repositório público.</p></div>
+  <div class="cartao"><h2>Cliente</h2><p class="ev">Identificada só por código (ex.: cliente-017), sem dados pessoais. Pode ter regras próprias em <code>carteiras/&lt;id&gt;/config/</code>.</p></div>
+  <div class="cartao"><h2>Analista e simulação</h2><p class="ev">Carteiras recomendadas e testes seus, registradas como <b>simuladas</b> com <code>rvlocal rebalancear</code>. Medem a recomendação, não o seu dinheiro.</p></div>
+</div>
+{% endblock %}

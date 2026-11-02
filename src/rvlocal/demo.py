@@ -95,8 +95,8 @@ def _precos(dias: list[date], choque: dict[tuple[str, int], float]) -> dict[str,
 
 
 def gerar(destino: str = "demo") -> Path:
-    from .util import raiz
-    origem = raiz()
+    from .util import raiz_projeto
+    origem = raiz_projeto()
     dest = Path(destino).resolve()
     if dest.exists() and any(dest.iterdir()):
         if not (dest / MARCADOR).exists():
@@ -107,7 +107,9 @@ def gerar(destino: str = "demo") -> Path:
     (dest / MARCADOR).write_text("# DADOS DEMO\n\nBase fictícia gerada por `python -m rvlocal demo`. "
                                  "Tickers e preços SINTÉTICOS. Não é recomendação nem dado de mercado.\n",
                                  encoding="utf-8")
-    ambiente = {k: os.environ.get(k) for k in ("RVLOCAL_HOME", "RVLOCAL_NATUREZA", "RVLOCAL_AGORA")}
+    ambiente = {k: os.environ.get(k) for k in ("RVLOCAL_HOME", "RVLOCAL_NATUREZA", "RVLOCAL_AGORA",
+                                               "RVLOCAL_CARTEIRA")}
+    os.environ.pop("RVLOCAL_CARTEIRA", None)
     os.environ.update(RVLOCAL_HOME=str(dest), RVLOCAL_NATUREZA="demo")
     try:
         _montar(dest)
@@ -132,6 +134,8 @@ def _montar(dest: Path) -> None:
     choque = {("OLEO3", s0 + 70): -0.13, ("BANK4", s0 + 33): 0.04}
     px = _precos(dias, choque)
     gravar_json(dest / "data" / "livros" / "instrumentos.json", INSTRUMENTOS)
+    (dest / "carteira.toml").write_text('nome = "Carteira própria (DEMO)"\ntipo = "propria"\nnatureza = "demo"\n'
+                                        'benchmark = "IBOV"\n', encoding="utf-8")
     for s, vals in px.items():
         series.gravar_historico(s, vals, "demo-sintetico", natureza="demo")
 
@@ -282,7 +286,7 @@ def _montar(dest: Path) -> None:
 
     # última semana: aumento grande de INDX11 que estoura o teto de posição; a pendência é ignorada
     k = len(dias) - 4
-    comprar(k, "INDX11", 18, {**chk("T-INDX11", "Aproveitar a queda do índice", 30, 0.85, 1.35, "INDX11", k)},
+    comprar(k, "INDX11", 16, {**chk("T-INDX11", "Aproveitar a queda do índice", 28, 0.85, 1.35, "INDX11", k)},
             tipo_dec="aumentar")
 
     for o in sorted(ops, key=lambda o: o["data"]):
@@ -307,6 +311,53 @@ def _montar(dest: Path) -> None:
             if d.month % 3 == 0 or prox is None:
                 boletim.emitir("trimestral", d)
     boletim.emitir("diario", dias[-1])
+    _outras_carteiras(iso, s)
+
+
+def _outras_carteiras(iso: list[str], s: int) -> None:
+    """Duas carteiras extras, para mostrar a comparação: uma recomendada de analista (rebalanceada
+    todo mês) e uma de cliente (alocação moderada, rebalanceada a cada trimestre). Mesmo universo e
+    mesmos preços da principal; gerenciadas por pesos-alvo com `simulacao.rebalancear`."""
+    from . import carteiras, simulacao
+    from .util import usar_carteira
+    carteiras.criar("analista-demo", "Recomendada da Casa Fictícia", "analista", natureza="demo",
+                    fonte="Casa de Análise Fictícia (DEMO)", descricao="carteira mensal de ações brasileiras")
+    carteiras.criar("cliente-001", "Cliente 001 · moderado", "cliente", natureza="demo",
+                    descricao="perfil moderado, metade no exterior e em índice")
+    meses = sorted({d[:7] for d in iso[s:]})
+    primeiros = [next(d for d in iso[s:] if d.startswith(m)) for m in meses]
+    recomendacoes = [
+        {"EXPO3": 15, "INDU3": 15, "BANK4": 20, "ENER3": 15, "OLEO3": 15, "VARE3": 10},
+        {"EXPO3": 20, "INDU3": 15, "BANK4": 20, "ENER3": 15, "OLEO3": 10, "VARE3": 10},
+        {"EXPO3": 20, "INDU3": 20, "BANK4": 15, "ENER3": 15, "OLEO3": 10, "IMOB11": 10},
+        {"EXPO3": 20, "INDU3": 20, "BANK4": 15, "ENER3": 20, "IMOB11": 15},
+    ]
+    with usar_carteira("analista-demo"):
+        for k, d in enumerate(primeiros):
+            simulacao.rebalancear(recomendacoes[min(k, len(recomendacoes) - 1)], d,
+                                  capital=100_000.0 if k == 0 else None, custos_pct=0.05,
+                                  fonte="Casa de Análise Fictícia (DEMO)", tese_id="REC-CASA-FICTICIA",
+                                  justificativa=f"carteira recomendada de {d[:7]}", horizonte="1 mês")
+        simulacao.reprocessar(iso[s], iso[-1])
+    alvo_cliente = {"INDX11": 30, "IMOB11": 15, "ENER3": 10, "VOOX": 25, "PAGX": 10}
+    # regras PRÓPRIAS da carteira: a política do cliente aceita até 35% num ETF de índice
+    from .util import raiz_base
+    cfg = raiz_base() / "carteiras" / "cliente-001" / "config"
+    cfg.mkdir(parents=True, exist_ok=True)
+    regras_txt = (raiz_base() / "config" / "regras.toml").read_text(encoding="utf-8")
+    (cfg / "regras.toml").write_text(regras_txt.replace("teto_posicao_pct = 25", "teto_posicao_pct = 35"),
+                                     encoding="utf-8")
+    risco_txt = (raiz_base() / "config" / "risco.toml").read_text(encoding="utf-8")
+    (cfg / "risco.toml").write_text(risco_txt.replace("hhi_max = 0.20", "hhi_max = 0.30"), encoding="utf-8")
+    with usar_carteira("cliente-001"):
+        trimestrais = [d for d in primeiros if int(d[5:7]) in (1, 4, 7, 10)] or primeiros[:1]
+        if primeiros[0] not in trimestrais:
+            trimestrais = [primeiros[0]] + trimestrais
+        for k, d in enumerate(trimestrais):
+            simulacao.rebalancear(alvo_cliente, d, capital=250_000.0 if k == 0 else None, custos_pct=0.05,
+                                  tese_id="ALOCACAO-MODERADA", justificativa="política de alocação do cliente",
+                                  horizonte="3 anos")
+        simulacao.reprocessar(iso[s], iso[-1])
 
 
 def _gestor_simulado(i: int, s: int, ult: int, iso: list[str], px: dict) -> None:

@@ -41,6 +41,20 @@ Ordem sugerida: 2.0 → 2.1 → (2.2 ∥ 2.3 ∥ 2.4) → 2.5 → 2.6 → 2.7, c
 - Captura da carteira por print (visão) não foi feita; o registro é pelo `operar` ou pelo livro.
 - Fontes de preço continuam sem teste ao vivo (rede bloqueada aqui); agendamentos desligados até lá.
 
+## Ciclo 2.1: várias carteiras, CONCLUÍDO (02/11/2026)
+
+Pedido: dados reais no localhost, vitrine no GitHub, Vercel mais adiante; acompanhar ativos, testar carteiras
+próprias, de clientes e recomendadas por analistas.
+
+- Pasta de dados privada fora do repositório público (`rvlocal iniciar`, `.rvlocal-home`).
+- Carteiras `propria`, `cliente`, `analista`, `simulacao`, cada uma com os próprios livros; universo de ativos
+  e banco de preços compartilhados; regras por carteira com fallback para a configuração geral.
+- `rebalancear` (pesos-alvo, com câmbio nos dois sentidos), `reprocessar` (fechamentos de um período),
+  `historico` (backfill do Yahoo, fonte única), `ativo` (universo), `--carteira` e `--todas`.
+- Painel: telas Carteiras (comparação) e Ativos (universo × carteiras), seletor de carteira, exportação com
+  subpasta por carteira; vitrine no GitHub Pages só com DEMO.
+- Clientes por código; a criação recusa CPF e e-mail no nome (LGPD).
+
 ## Ciclo 3: inteligência (agentes, dados, quant, backtest, opções, automação)
 
 | # | Épico | Depende de | Cx. | Pronto quando |

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from .util import ler_json, p_livro
+from .util import gravar_json, ler_json, p_livro, raiz_base
 
 CLASSES = {"acao", "fii", "etf", "bdr", "acao_ext", "etf_ext", "opcao", "rf", "fundo", "cripto"}
 PADRAO = {"classe": "acao", "moeda": "BRL", "pais": "BR", "setor": "sem setor", "fatores": [],
@@ -20,11 +20,30 @@ PADRAO = {"classe": "acao", "moeda": "BRL", "pais": "BR", "setor": "sem setor", 
 
 
 def caminho():
-    return p_livro("instrumentos.json")
+    """Cadastro compartilhado por todas as carteiras (o universo de ativos)."""
+    return raiz_base() / "data" / "livros" / "instrumentos.json"
 
 
 def carregar() -> dict[str, dict]:
-    return ler_json(caminho(), {}) or {}
+    """Universo da base + ajustes próprios da carteira atual (se houver)."""
+    base = ler_json(caminho(), {}) or {}
+    proprio = p_livro("instrumentos.json")
+    if proprio != caminho() and proprio.exists():
+        for t, v in (ler_json(proprio, {}) or {}).items():
+            base[t] = {**base.get(t, {}), **v}
+    return base
+
+
+def cadastrar(ticker: str, dados: dict) -> dict:
+    """Inclui ou atualiza um ativo no universo (cadastro versionado pelo git, não é livro)."""
+    cad = ler_json(caminho(), {}) or {}
+    novo = {**cad.get(ticker, {}), **{k: v for k, v in dados.items() if v is not None}}
+    probs = validar({ticker: novo})
+    if probs:
+        raise ValueError("; ".join(probs))
+    cad[ticker] = novo
+    gravar_json(caminho(), dict(sorted(cad.items())))
+    return novo
 
 
 def info(ticker: str, cad: dict | None = None) -> dict:

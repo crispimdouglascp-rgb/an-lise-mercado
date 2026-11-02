@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block titulo %}Ativos{% endblock %}
+{% block corpo %}
+<p class="rotulo">Universo de ativos · {{ linhas|length }} cadastrados · {{ n_monitorados }} monitorados sem posição</p>
+<h1>Cada ativo, e onde ele está.</h1>
+<div class="cartao tabela"><table>
+<tr><th>Ativo</th><th>Classe · setor</th><th class="n">Último</th><th class="n">Dia</th><th class="n">1 mês</th><th class="n">3 meses</th><th class="n">12 meses</th>
+<th class="n">Vol. anual</th><th>Em carteiras (peso)</th><th>Fichas</th></tr>
+{% for l in linhas %}<tr>
+<td><b>{{ l.t }}</b>{% if l.i.monitorar %} <span class="pilula roxa">monitorado</span>{% endif %}<div class="sub">{{ l.i.nome or '' }}</div></td>
+<td>{{ l.i.classe }} · {{ l.i.moeda }}<div class="sub">{{ l.i.setor }}{% if l.i.fatores %} · {{ l.i.fatores|join(', ') }}{% endif %}</div></td>
+<td class="n">{{ l.preco|num(2) }}<div class="sub">{{ l.data|data }}</div></td>
+<td class="n {{ l.r1|cls }}">{{ l.r1|pct }}</td><td class="n {{ l.r21|cls }}">{{ l.r21|pct }}</td>
+<td class="n {{ l.r63|cls }}">{{ l.r63|pct }}</td><td class="n {{ l.r252|cls }}">{{ l.r252|pct }}</td>
+<td class="n">{{ (l.vol|num(1) ~ '%') if l.vol is not none else 'insuf.' }}</td>
+<td>{% for p in l.posse %}<a href="{{ link('posicoes', p.carteira) }}" class="pilula">{{ p.nome }} {{ p.peso|num(1) }}%</a> {% else %}<span class="sub">nenhuma</span>{% endfor %}</td>
+<td>{% for f in l.fichas %}<span class="pilula {{ 'sim' if f.rating == 'BUY' else 'nao' if f.rating == 'SELL' else 'media' }}" title="alvo {{ f.alvo }} · justo {{ f.preco_justo }}">{{ f.carteira }}: {{ f.rating or '—' }}</span> {% else %}<span class="sub">—</span>{% endfor %}</td>
+</tr>{% else %}<tr><td colspan="10" class="vazio">Universo vazio. Cadastre com <code>python -m rvlocal ativo TICKER --classe acao --setor ...</code></td></tr>{% endfor %}
+</table></div>
+<p class="sub">Retornos sobre os fechamentos do mercado.db (1, 21, 63 e 252 pregões). Sem histórico suficiente, o campo fica vazio: nada é estimado. Carregue o histórico com <code>python -m rvlocal historico</code>.</p>
+{% endblock %}

@@ -14,11 +14,12 @@ import os
 import subprocess
 from contextlib import contextmanager
 from datetime import date
+from pathlib import Path
 from typing import Any, Iterator
 
 from .util import agora, anexar_jsonl, ler_jsonl, p_livro, raiz
 
-NATUREZAS = {"real", "demo", "estimativa", "hipotese"}
+NATUREZAS = {"real", "demo", "simulada", "estimativa", "hipotese"}
 
 ARQUIVOS = {
     "operacoes": "operacoes.jsonl",
@@ -42,7 +43,12 @@ def ler(nome: str) -> list[dict]:
 
 
 def natureza_padrao() -> str:
-    return os.environ.get("RVLOCAL_NATUREZA", "real")
+    """RVLOCAL_NATUREZA, senão a natureza declarada da carteira (analista e simulação = simulada)."""
+    env = os.environ.get("RVLOCAL_NATUREZA")
+    if env:
+        return env
+    from . import carteiras
+    return carteiras.info().get("natureza", "real")
 
 
 def anexar(nome: str, registro: dict[str, Any]) -> dict:
@@ -79,13 +85,18 @@ def verificar_imutabilidade() -> list[str]:
     rz = raiz()
     try:
         subprocess.run(["git", "-C", str(rz), "rev-parse", "HEAD"], capture_output=True, check=True)
+        topo = Path(subprocess.run(["git", "-C", str(rz), "rev-parse", "--show-toplevel"], capture_output=True,
+                                   check=True, text=True).stdout.strip())
     except (OSError, subprocess.CalledProcessError):
         return []  # fora de um repositório git: nada a comparar
     probs = []
     for arq in ARQUIVOS.values():
         atual_p = p_livro(arq)
-        rel = atual_p.relative_to(rz).as_posix()
-        r = subprocess.run(["git", "-C", str(rz), "show", f"HEAD:{rel}"], capture_output=True)
+        try:
+            rel = atual_p.resolve().relative_to(topo.resolve()).as_posix()
+        except ValueError:
+            continue
+        r = subprocess.run(["git", "-C", str(topo), "show", f"HEAD:{rel}"], capture_output=True)
         if r.returncode != 0:
             continue  # livro ainda não commitado
         antigo = r.stdout

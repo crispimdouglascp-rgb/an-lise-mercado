@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 import os
 import tomllib
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -11,12 +13,49 @@ from typing import Any
 BRT = timezone(timedelta(hours=-3))  # Brasil sem horário de verão desde 2019
 
 
-def raiz() -> Path:
-    """Raiz do projeto. Pode ser sobrescrita com RVLOCAL_HOME (usado nos testes)."""
+_CARTEIRA: ContextVar[str | None] = ContextVar("rvlocal_carteira", default=None)
+CARTEIRA_PADRAO = "principal"
+
+
+def raiz_projeto() -> Path:
+    """Pasta do código (config padrão, prompts, exemplos)."""
+    return Path(__file__).resolve().parents[2]
+
+
+def raiz_base() -> Path:
+    """Pasta de DADOS: mercado.db, cadastro de ativos, carteira principal e carteiras/.
+
+    Ordem: RVLOCAL_HOME; o arquivo .rvlocal-home na pasta do código (escrito por
+    `rvlocal iniciar`); a própria pasta do código.
+    """
     env = os.environ.get("RVLOCAL_HOME")
     if env:
-        return Path(env)
-    return Path(__file__).resolve().parents[2]
+        return Path(env).expanduser()
+    marcador = raiz_projeto() / ".rvlocal-home"
+    if marcador.exists():
+        destino = marcador.read_text(encoding="utf-8").strip()
+        if destino:
+            return Path(destino).expanduser()
+    return raiz_projeto()
+
+
+def carteira_atual() -> str:
+    return _CARTEIRA.get() or os.environ.get("RVLOCAL_CARTEIRA") or CARTEIRA_PADRAO
+
+
+def raiz() -> Path:
+    """Pasta da carteira atual. A principal é a própria base; as outras ficam em carteiras/<id>/."""
+    c = carteira_atual()
+    return raiz_base() if c == CARTEIRA_PADRAO else raiz_base() / "carteiras" / c
+
+
+@contextmanager
+def usar_carteira(carteira: str | None):
+    tok = _CARTEIRA.set(carteira or CARTEIRA_PADRAO)
+    try:
+        yield
+    finally:
+        _CARTEIRA.reset(tok)
 
 
 def agora() -> datetime:
@@ -76,10 +115,14 @@ def ler_toml(caminho: Path) -> dict:
 
 
 def config(nome: str, padrao: dict | None = None) -> dict:
-    caminho = raiz() / "config" / nome
-    if padrao is not None and not caminho.exists():
+    """Configuração da carteira atual; se ela não tiver o arquivo, a da base; depois a padrão do código."""
+    for pasta in (raiz(), raiz_base(), raiz_projeto()):
+        caminho = pasta / "config" / nome
+        if caminho.exists():
+            return ler_toml(caminho)
+    if padrao is not None:
         return padrao
-    return ler_toml(caminho)
+    raise FileNotFoundError(f"config/{nome} não encontrado")
 
 
 def p_livro(nome: str) -> Path:

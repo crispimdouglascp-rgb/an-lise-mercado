@@ -15,15 +15,17 @@ from .util import agora, config, gravar_json, hoje, p_gerado
 
 
 def tickers_de_interesse() -> list[str]:
-    """Posições abertas + ativos das hipóteses ativas + instrumentos marcados `monitorar`."""
-    est = razao.calcular_estado(razao.carregar_operacoes())
+    """De TODAS as carteiras: posições abertas e ativos das hipóteses ativas; mais o universo marcado
+    `monitorar`. Um único preço coletado serve a todas as carteiras (mercado.db compartilhado)."""
+    from . import carteiras
+    from .util import usar_carteira
     nomes_serie = set(config("series.toml"))
-    ts = set(est.posicoes)
-    for t, i in instrumentos.carregar().items():
-        if i.get("monitorar"):
-            ts.add(t)
-    for h in hipoteses.ativas():
-        ts |= {c for c in hipoteses.simbolos(h) if c not in nomes_serie}
+    ts = {t for t, i in instrumentos.carregar().items() if i.get("monitorar")}
+    for cid in carteiras.ids():
+        with usar_carteira(cid):
+            ts |= set(razao.calcular_estado(razao.carregar_operacoes()).posicoes)
+            for h in hipoteses.ativas():
+                ts |= {c for c in hipoteses.simbolos(h) if c not in nomes_serie}
     return sorted(ts)
 
 

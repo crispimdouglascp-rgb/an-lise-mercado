@@ -74,28 +74,37 @@ def vigiar(forcar: bool = False, enviar: bool = True) -> list[dict]:
             print(f"fora da janela {vig['janela_inicio']}-{vig['janela_fim']} ({ag:%H:%M}).")
             return []
     dia = hoje().isoformat()
-    with livros.rotina("vigilancia") as hb:
-        # D13: a vigilância usa o SEU limite de divergência (antes usava o da coleta e citava outro)
-        leituras = ler_tudo(vig["divergencia_max_pct"])
-        candidatos = _gerar(leituras, instrumentos.parametros(dia), regras, series.carregar(), dia)
-
-        arq = p_alertas(dia)
-        ja = {a["chave"] for a in ler_jsonl(arq)}
-        novos = [a for a in candidatos if a["chave"] not in ja]
-        for a in novos:
-            a["hora"] = ag.strftime("%H:%M")
-            anexar_jsonl(arq, a)
-        # D8: stop tocado no pregão vira pendência na mesa, mesmo que o fechamento se recupere
-        pend = [{"chave": f"stop_intradiario:{a['simbolo']}:", "regra": "stop_intradiario", "severidade": "alta",
-                 "ativo": a["simbolo"], "motivo": a["texto"], "evidencia": {"hora": a["hora"]}}
-                for a in novos if a["tipo"] == "stop"]
-        if pend:
-            mesa.sincronizar(dia, pend, origem="vigilancia", encerrar_ausentes=False)
-        hb["alertas_novos"] = len(novos)
-    if novos and enviar:
-        ENVIAR("RV Local " + ag.strftime("%H:%M") + "\n" + "\n".join("• " + a["texto"] for a in novos))
-    print(f"vigilância {ag:%H:%M}: {len(candidatos)} condições, {len(novos)} alertas novos.")
-    return novos
+    from . import carteiras
+    from .util import usar_carteira
+    # D13: a vigilância usa o SEU limite de divergência (antes usava o da coleta e citava outro)
+    leituras = ler_tudo(vig["divergencia_max_pct"])   # uma leitura de preço para todas as carteiras
+    fech = series.carregar()
+    todos, n_cond = [], 0
+    for cart in carteiras.listar():
+        with usar_carteira(cart["id"]), livros.rotina("vigilancia") as hb:
+            candidatos = _gerar(leituras, instrumentos.parametros(dia), regras, fech, dia)
+            n_cond += len(candidatos)
+            arq = p_alertas(dia)
+            ja = {a["chave"] for a in ler_jsonl(arq)}
+            novos = [a for a in candidatos if a["chave"] not in ja]
+            for a in novos:
+                a["hora"] = ag.strftime("%H:%M")
+                anexar_jsonl(arq, a)
+                a["carteira"] = cart["id"]
+            # D8: stop tocado no pregão vira pendência na mesa, mesmo que o fechamento se recupere
+            pend = [{"chave": f"stop_intradiario:{a['simbolo']}:", "regra": "stop_intradiario",
+                     "severidade": "alta", "ativo": a["simbolo"], "motivo": a["texto"],
+                     "evidencia": {"hora": a["hora"]}} for a in novos if a["tipo"] == "stop"]
+            if pend:
+                mesa.sincronizar(dia, pend, origem="vigilancia", encerrar_ausentes=False)
+            hb["alertas_novos"] = len(novos)
+            todos += [dict(a, nome_carteira=cart["nome"]) for a in novos]
+    if todos and enviar:
+        varias = len({a["carteira"] for a in todos}) > 1 or todos[0]["carteira"] != "principal"
+        ENVIAR("RV Local " + ag.strftime("%H:%M") + "\n" + "\n".join(
+            "• " + (f"[{a['nome_carteira']}] " if varias else "") + a["texto"] for a in todos))
+    print(f"vigilância {ag:%H:%M}: {n_cond} condições, {len(todos)} alertas novos.")
+    return todos
 
 
 def p_alertas(dia: str):

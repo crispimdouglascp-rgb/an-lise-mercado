@@ -4,7 +4,7 @@ Toda compra/venda deveria nascer de uma decisão com os 9 itens abaixo. A comple
 medida por código e pesa 15% do boletim (Qualidade das decisões). Operação sem tese
 vale ZERO nesse critério.
 
-Tipos: entrada | saida | aumentar | reduzir | stop | realizacao | manter | hedge | revisao
+Tipos: entrada | saida | aumentar | reduzir | stop | realizacao | manter | hedge | revisao | rebalanceamento
 """
 from __future__ import annotations
 
@@ -12,7 +12,8 @@ from datetime import date
 
 from . import livros
 
-TIPOS = {"entrada", "saida", "aumentar", "reduzir", "stop", "realizacao", "manter", "hedge", "revisao"}
+TIPOS = {"entrada", "saida", "aumentar", "reduzir", "stop", "realizacao", "manter", "hedge", "revisao",
+         "rebalanceamento"}
 
 CHECKLIST = [
     ("tese_id", "Tese formalizada"),

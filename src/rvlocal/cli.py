@@ -178,8 +178,105 @@ def _painel(a) -> int:
     return 0
 
 
+def _todas(a, fn) -> int:
+    """Roda `fn()` na carteira escolhida ou, com --todas, em cada carteira."""
+    from . import carteiras
+    from .util import usar_carteira
+    if not getattr(a, "todas", False):
+        fn()
+        return 0
+    for c in carteiras.listar():
+        print(f"\n=== {c['nome']} ({c['id']}, {c['tipo']}) ===")
+        with usar_carteira(c["id"]):
+            fn()
+    return 0
+
+
+def _carteiras(_a) -> int:
+    from . import carteiras, desempenho
+    from .util import usar_carteira
+    print(f"{'id':<18} {'tipo':<10} {'natureza':<9} {'último':<11} {'patrimônio':>14} {'acumulado':>10} {'nota':>8}  nome")
+    for c in carteiras.listar():
+        with usar_carteira(c["id"]):
+            ds = diario.carregar_diarios()
+            from . import boletim
+            sem = boletim.historico("semanal")
+        ult = ds[-1] if ds else {}
+        cur = desempenho.curva(ds)
+        acum = f"{cur[-1][1] - 100:+.2f}%" if len(cur) > 1 else "—"
+        nota = f"{sem[-1]['letra']} {sem[-1]['nota_final']:.2f}" if sem else "—"
+        pat = f"{ult['patrimonio']:,.0f}" if ult.get("patrimonio") else "—"
+        print(f"{c['id']:<18} {c['tipo']:<10} {c['natureza']:<9} {ult.get('data', '—'):<11} {pat:>14} {acum:>10} "
+              f"{nota:>8}  {c['nome']}" + (f" · {c['fonte']}" if c.get("fonte") else ""))
+    return 0
+
+
+def _carteira_nova(a) -> int:
+    from . import carteiras
+    c = carteiras.criar(a.id, a.nome, a.tipo, a.benchmark, a.fonte, a.descricao, a.natureza)
+    print(f"carteira {c['id']} criada ({c['tipo']}, natureza {c['natureza']}). Use: python -m rvlocal --carteira {c['id']} ...")
+    return 0
+
+
+def _iniciar(a) -> int:
+    from . import carteiras
+    d, marcador = carteiras.iniciar_base(a.destino)
+    print(f"pasta de dados criada em {d}\n(o código passa a usá-la; o caminho ficou em {marcador}, fora do git)")
+    print("Versione essa pasta num repositório git PRIVADO: cd " + d + " && git init && git add . && git commit -m base")
+    return 0
+
+
+def _ativo(a) -> int:
+    from . import instrumentos
+    dados = {"nome": a.nome, "classe": a.classe, "moeda": a.moeda, "pais": a.pais, "setor": a.setor,
+             "fatores": [f.strip() for f in a.fatores.split(",") if f.strip()] if a.fatores else None,
+             "receita_usd_pct": a.receita_usd_pct, "yahoo": a.yahoo, "lote": a.lote,
+             "monitorar": True if a.monitorar else None}
+    r = instrumentos.cadastrar(a.ticker.upper(), dados)
+    print(f"{a.ticker.upper()}: {r}")
+    return 0
+
+
+def _historico(a) -> int:
+    from . import simulacao
+    sims = [s.strip().upper() for s in a.ativos.split(",")] if a.ativos else None
+    for k, v in simulacao.carregar_historico(sims, a.periodo).items():
+        print(f"{k:<10} {v if isinstance(v, str) else f'{v} fechamentos novos'}")
+    return 0
+
+
+def _rebalancear(a) -> int:
+    from . import simulacao
+    pesos = simulacao.interpretar_pesos(a.pesos)
+    dia = _hoje(a).isoformat()
+    kw = dict(capital=a.capital, custos_pct=a.custos_pct, justificativa=a.justificativa, fonte=a.fonte,
+              tese_id=a.tese, horizonte=a.horizonte)
+    plano = simulacao.rebalancear(pesos, dia, gravar=False, **kw)
+    print(f"Rebalanceamento em {dia} · patrimônio R$ {plano['patrimonio']:,.2f}")
+    for p in plano["plano"]:
+        print(f"  {p['ativo']:<8} {p['atual']:>10g} -> {p['alvo']:>10g}  ({p['delta']:+g})  alvo {p['peso_alvo']:.1f}%"
+              f"  efetivo {p['peso_efetivo']:.1f}%")
+    print(f"  caixa ao final: {plano['peso_caixa_pct']:.1f}%")
+    if not a.sim and input("Registrar? Nada é enviado à corretora. [s/N] ").strip().lower() not in {"s", "sim"}:
+        print("nada gravado.")
+        return 1
+    r = simulacao.rebalancear(pesos, dia, gravar=True, **kw)
+    print(f"gravado: {len(r['operacoes'])} operações, decisão {r['decisao_id']}")
+    return 0
+
+
+def _reprocessar(a) -> int:
+    from . import simulacao
+    from .util import hoje
+    def fn():
+        dias = simulacao.reprocessar(a.desde, a.ate or hoje().isoformat(), boletins=not a.sem_boletins)
+        print(f"{len(dias)} pregões reprocessados")
+    return _todas(a, fn)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="rvlocal", description="RV Local: o código calcula; a IA interpreta.")
+    p.add_argument("--carteira", help="id da carteira (padrão: principal). Liste com: rvlocal carteiras")
     sp = p.add_subparsers(dest="cmd", required=True)
 
     v = sp.add_parser("validar", help="valida livros, razão, fichas, hipóteses e imutabilidade")
@@ -200,12 +297,15 @@ def main(argv: list[str] | None = None) -> int:
     f = sp.add_parser("fechar", help="fechamento do dia (também serve de repescagem: --data)")
     f.add_argument("--data")
     f.add_argument("--sem-envio", action="store_true")
-    f.set_defaults(f=lambda a: (diario.fechar_dia(a.data, not a.sem_envio), 0)[1])
+    f.add_argument("--todas", action="store_true", help="todas as carteiras")
+    f.set_defaults(f=lambda a: _todas(a, lambda: diario.fechar_dia(a.data, not a.sem_envio)))
 
     cb = sp.add_parser("cobranca", help="07:45: o que o sistema precisa de você")
     cb.add_argument("--data")
     cb.add_argument("--sem-envio", action="store_true")
-    cb.set_defaults(f=lambda a: (__import__("rvlocal.cobranca", fromlist=["x"]).executar(_hoje(a), not a.sem_envio), 0)[1])
+    cb.add_argument("--todas", action="store_true", help="todas as carteiras")
+    cb.set_defaults(f=lambda a: _todas(a, lambda: __import__("rvlocal.cobranca", fromlist=["x"]).executar(
+        _hoje(a), not a.sem_envio)))
 
     d = sp.add_parser("decisao", help="registra decisão (stop, realização, manter...)")
     d.add_argument("--data", required=True)
@@ -264,7 +364,8 @@ def main(argv: list[str] | None = None) -> int:
     b = sp.add_parser("boletim", help="emite boletim do gestor (nota 0 a 5)")
     b.add_argument("--tipo", choices=["diario", "semanal", "mensal", "trimestral"], default="semanal")
     b.add_argument("--data")
-    b.set_defaults(f=_boletim)
+    b.add_argument("--todas", action="store_true", help="todas as carteiras")
+    b.set_defaults(f=lambda a: _todas(a, lambda: _boletim(a)))
 
     fi = sp.add_parser("fiscal", help="apuração fiscal mensal (estimativa a validar com o contador)")
     fi.add_argument("--mes")
@@ -277,6 +378,59 @@ def main(argv: list[str] | None = None) -> int:
     dp.add_argument("--data")
     dp.set_defaults(f=lambda a: (livros.anexar("eventos", {"tipo": "darf_pago", "mes": a.mes, "valor": a.valor,
                                                            "data": _hoje(a).isoformat()}), print("registrado"), 0)[2])
+
+    sp.add_parser("carteiras", help="lista e compara as carteiras").set_defaults(f=_carteiras)
+    cn = sp.add_parser("carteira-nova", help="cria uma carteira (propria, cliente, analista, simulacao)")
+    cn.add_argument("--id", required=True, help="ex.: cliente-017, analista-casa-x, teste-dividendos")
+    cn.add_argument("--nome", required=True)
+    cn.add_argument("--tipo", required=True, choices=["propria", "cliente", "analista", "simulacao"])
+    cn.add_argument("--benchmark", default="IBOV")
+    cn.add_argument("--fonte", help="analista ou casa de análise (carteiras recomendadas)")
+    cn.add_argument("--descricao")
+    cn.add_argument("--natureza", choices=["real", "simulada"], help="padrão: pelo tipo")
+    cn.set_defaults(f=_carteira_nova)
+
+    ini = sp.add_parser("iniciar", help="cria a pasta PRIVADA de dados fora do repositório de código")
+    ini.add_argument("--destino", required=True, help="ex.: ~/rvlocal-dados")
+    ini.set_defaults(f=_iniciar)
+
+    at = sp.add_parser("ativo", help="inclui ou atualiza um ativo no universo (compartilhado)")
+    at.add_argument("ticker")
+    at.add_argument("--nome")
+    at.add_argument("--classe", choices=["acao", "fii", "etf", "bdr", "acao_ext", "etf_ext", "opcao", "rf", "fundo", "cripto"])
+    at.add_argument("--moeda")
+    at.add_argument("--pais")
+    at.add_argument("--setor")
+    at.add_argument("--fatores", help="separados por vírgula: juro_longo,exportadora")
+    at.add_argument("--receita-usd-pct", type=float)
+    at.add_argument("--yahoo", help="símbolo no Yahoo, se diferente do padrão")
+    at.add_argument("--lote", type=int)
+    at.add_argument("--monitorar", action="store_true", help="coletar preço mesmo sem posição")
+    at.set_defaults(f=_ativo)
+
+    hi = sp.add_parser("historico", help="carrega fechamentos históricos (Yahoo, fonte única) no mercado.db")
+    hi.add_argument("--ativos", help="lista separada por vírgula (padrão: universo + séries)")
+    hi.add_argument("--periodo", default="2y", help="1y, 2y, 5y, 10y, max")
+    hi.set_defaults(f=_historico)
+
+    rb = sp.add_parser("rebalancear", help="leva a carteira a pesos-alvo (ex.: carteira recomendada)")
+    rb.add_argument("--pesos", required=True, help="'WEGE3=20, ITUB4=15, BOVA11=30' (% do patrimônio; o resto é caixa)")
+    rb.add_argument("--data", help="data do fechamento usado (padrão: hoje)")
+    rb.add_argument("--capital", type=float, help="aporte inicial em R$ (carteira nova)")
+    rb.add_argument("--custos-pct", type=float, default=0.0)
+    rb.add_argument("--fonte", help="analista/casa da recomendação")
+    rb.add_argument("--justificativa")
+    rb.add_argument("--tese")
+    rb.add_argument("--horizonte")
+    rb.add_argument("--sim", action="store_true", help="não perguntar confirmação")
+    rb.set_defaults(f=_rebalancear)
+
+    rp = sp.add_parser("reprocessar", help="refaz os fechamentos de um período (simulação ou repescagem)")
+    rp.add_argument("--desde", required=True)
+    rp.add_argument("--ate")
+    rp.add_argument("--sem-boletins", action="store_true")
+    rp.add_argument("--todas", action="store_true", help="todas as carteiras")
+    rp.set_defaults(f=_reprocessar)
 
     mg = sp.add_parser("migrar", help="converte os arquivos da fase 1 para os livros")
     mg.set_defaults(f=lambda a: (print("\n".join(__import__("rvlocal.migrar", fromlist=["x"]).migrar())), 0)[1])
@@ -292,7 +446,17 @@ def main(argv: list[str] | None = None) -> int:
     pn.set_defaults(f=_painel)
 
     a = p.parse_args(argv)
-    return a.f(a)
+    from . import carteiras
+    from .util import carteira_atual, usar_carteira
+    if a.carteira and not carteiras.existe(a.carteira):
+        print(f"carteira {a.carteira!r} não existe. Carteiras: {', '.join(carteiras.ids())}")
+        return 1
+    with usar_carteira(a.carteira or carteira_atual()):   # contexto, não variável de ambiente
+        try:
+            return a.f(a)
+        except ValueError as e:
+            print("ERRO:", e)
+            return 1
 
 
 if __name__ == "__main__":

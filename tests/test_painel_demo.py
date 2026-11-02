@@ -64,5 +64,30 @@ def test_registrar_decisao_pelo_painel_grava_no_livro(base_demo):
 def test_exportacao_estatica(base_demo, tmp_path):
     from rvlocal.painel import app as A
     arquivos = A.exportar(str(tmp_path / "html"))
-    assert len(arquivos) == len(A.TELAS)
+    assert len(arquivos) == len(A.GLOBAIS) + 3 * len(A.TELAS)     # 3 carteiras na demo
     assert 'action="/decisao"' not in (tmp_path / "html" / "monitoramento.html").read_text()
+
+
+def test_painel_com_varias_carteiras(base_demo):
+    from fastapi.testclient import TestClient
+    from rvlocal import carteiras
+    from rvlocal.painel import app as A
+    assert carteiras.ids() == ["principal", "analista-demo", "cliente-001"]
+    c = TestClient(A.criar_app())
+    assert c.get("/carteiras").status_code == 200 and "Recomendada da Casa" in c.get("/carteiras").text
+    assert c.get("/ativos").status_code == 200
+    for cid in ("analista-demo", "cliente-001"):
+        for _, rota, _ in A.TELAS:
+            assert c.get(f"/{rota}?c={cid}").status_code == 200, (cid, rota)
+    assert c.get("/?c=nao-existe").status_code == 404
+
+
+def test_exportacao_sem_links_quebrados(base_demo, tmp_path):
+    import re
+    from rvlocal.painel import app as A
+    A.exportar(str(tmp_path / "site"))
+    raiz = tmp_path / "site"
+    assert (raiz / "cliente-001" / "index.html").exists() and (raiz / "carteiras.html").exists()
+    for p in raiz.rglob("*.html"):
+        for h in re.findall(r'href="([^"#:]+\.html)"', p.read_text()):
+            assert (p.parent / h).resolve().exists(), (p, h)

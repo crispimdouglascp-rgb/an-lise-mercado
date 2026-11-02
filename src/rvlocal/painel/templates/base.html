@@ -12,10 +12,19 @@
   <a class="marca" href="{{ link('dashboard') }}">RV Local<small>PLATAFORMA PESSOAL</small></a>
   {% if demo %}<span class="selo" title="Base fictícia: tickers e preços sintéticos">DADOS DEMO</span>{% endif %}
   <nav class="abas">
+    {% for nome, rota, rot in GLOBAIS %}<a href="{{ link(nome) }}" class="{{ 'ativa' if tela == nome }}">{{ rot }}</a>{% endfor %}
+    <span class="sep"></span>
     {% for nome, rota, rot in TELAS %}<a href="{{ link(nome) }}" class="{{ 'ativa' if tela == nome }}">{{ rot }}</a>{% endfor %}
     {% for nome, rot in CICLO3 %}<a href="{{ '#' if estatico else '/' ~ nome }}" class="off {{ 'ativa' if tela == nome }}" title="Ciclo 3">{{ rot }}</a>{% endfor %}
   </nav>
 </header>
+{% if tela not in NOMES_GLOBAIS %}
+<div class="faixa-carteira">
+  <span class="sub">carteira</span>
+  {% for c in LISTA %}<a href="{{ link(tela if tela != 'dashboard' else 'dashboard', c.id) }}" class="pilula {{ 'roxa' if c.id == CARTEIRA.id }}">{{ c.nome }}</a>{% endfor %}
+  <span class="sub">· {{ CARTEIRA.tipo }} · natureza {{ CARTEIRA.natureza }}{% if CARTEIRA.fonte %} · fonte {{ CARTEIRA.fonte }}{% endif %}</span>
+</div>
+{% endif %}
 <main>
 {% block corpo %}{% endblock %}
 <p class="rodape">
