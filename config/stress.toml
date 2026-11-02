@@ -1,0 +1,30 @@
+# Cenários de stress PRÉ-REGISTRADOS: escritos antes, aplicados todo pregão pelo código.
+# Choques em %. Ordem de precedência por posição: ativo > setor > fator > classe > país > padrao.
+# "moeda" é o choque do câmbio (BRL por unidade da moeda) aplicado ao que está em moeda estrangeira.
+# Mudar um cenário = criar outro id (o histórico do antigo continua comparável).
+
+[[cenario]]
+id = "S1"
+nome = "Choque doméstico: bolsa −15%, dólar +10%, juro longo pressionado"
+registrado_em = "2026-11-02"
+[cenario.choques]
+pais = { BR = -15.0, US = -3.0 }
+fator = { juro_longo = -22.0, exportadora = -5.0 }
+moeda = { USD = 10.0 }
+
+[[cenario]]
+id = "S2"
+nome = "Choque global: S&P −20%, Ibovespa −12%, dólar +15%"
+registrado_em = "2026-11-02"
+[cenario.choques]
+pais = { BR = -12.0, US = -20.0 }
+moeda = { USD = 15.0 }
+
+[[cenario]]
+id = "S3"
+nome = "Real forte: dólar −12%, exportadoras −10%, domésticas +5%"
+registrado_em = "2026-11-02"
+[cenario.choques]
+fator = { exportadora = -10.0, juro_longo = 5.0 }
+pais = { BR = 2.0 }
+moeda = { USD = -12.0 }

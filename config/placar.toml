@@ -1,0 +1,70 @@
+# Boletim do gestor e placar de hipóteses. A nota é calculada SÓ por código.
+# Pesos e escala de letras: decisão D-7 (escala inferida dos boletins da referência).
+
+[pesos]
+retorno_benchmark = 15
+aderencia_regras = 20
+gestao_risco = 20
+qualidade_decisoes = 15
+construcao_carteira = 10
+execucao_custos_fiscal = 10
+realizacao = 10
+
+[retorno]
+# pontos por pp de alfa: nota = 2,5 + alfa / k (limitada a 0..5)
+k_pp = { diario = 0.25, semanal = 1.0, mensal = 2.0, trimestral = 4.0 }
+concentracao_ganho_pct = 60   # aviso quando um ativo responde por mais que isso do ganho
+
+[aderencia]
+penalidade_media = 1.0
+penalidade_atraso = 0.5       # resolvida, mas depois do prazo
+
+[risco]
+penalidade_alta = 1.0         # por banda rompida por pregão
+penalidade_media = 0.5
+penalidade_stop_mantido = 1.0 # fechou abaixo do stop e seguiu na carteira sem decisão
+teto_rompimento_grave = 1.0   # rompimento > 1,5x o limite limita o critério a esta nota
+
+[decisoes]
+rr_minimo = 2.0               # risco-retorno mínimo de uma entrada
+penalidade_fora_da_regua = 0.5
+
+[construcao]
+penalidade_piso = 0.5
+penalidade_sem_ficha = 0.5
+penalidade_hhi = 1.0
+penalidade_nivel1 = 0.5
+
+[execucao]
+custos_max_pct_do_realizado = 10
+penalidade_giro = 1.0
+penalidade_custos = 1.0
+penalidade_darf_vencido = 2.0
+
+[realizacao]
+penalidade_perda_acima_do_risco = 0.5
+
+[tetos]
+aderencia_zero_nota_max = 2.0     # regra ignorada: a nota final não passa disso
+risco_baixo_limite = 1.5          # gestão de risco abaixo disso...
+risco_baixo_nota_max = 2.5        # ...limita a nota final a isso
+cobertura_minima_pct = 60         # abaixo: boletim "parcial", revisado em nova edição
+
+[letras]   # nota mínima de cada letra
+"A+" = 4.7
+"A" = 4.4
+"A-" = 4.1
+"B+" = 3.8
+"B" = 3.5
+"B-" = 3.2
+"C+" = 2.9
+"C" = 2.6
+"C-" = 2.3
+"D+" = 2.0
+"D" = 1.6
+"D-" = 1.5
+"F" = 0.0
+
+[hipoteses]
+limiar_pp = 0.75
+min_gates = 8

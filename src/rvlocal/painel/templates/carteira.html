@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block titulo %}Carteira{% endblock %}
+{% block corpo %}
+<p class="rotulo">Carteira · TWR desde {{ primeiro|data }}</p><h1>A carteira como um todo.</h1>
+{% if not d %}<p class="vazio">Sem fechamentos.</p>{% else %}
+<div class="grade g4">
+  <div class="cartao kpi"><div class="l">CONSOLIDADA · R$</div><div class="v {{ acum.consolidada|cls }}">{{ acum.consolidada|pct }}</div><div class="d">as sleeves e o caixa, uma curva</div></div>
+  <div class="cartao kpi k2"><div class="l">RV BRASIL</div><div class="v {{ acum.br|cls }}">{{ acum.br|pct }}</div><div class="d">Ibovespa {{ acum.ibov|pct }}</div></div>
+  <div class="cartao kpi k3"><div class="l">RV EXTERIOR · EM R$</div><div class="v {{ acum.ext|cls }}">{{ acum.ext|pct }}</div><div class="d">{{ acum.ext_local|pct }} em US$ · S&amp;P {{ acum.spx|pct }} (em R$ {{ acum.spx_brl|pct }})</div></div>
+  <div class="cartao kpi k4"><div class="l">PATRIMÔNIO</div><div class="v num">{{ d.patrimonio|brl(0) }}</div><div class="d">caixa {{ d.caixa|brl(0) }}{% for m, v in d.caixa_moeda.items() %} · {{ m }} {{ v|num(0) }}{% endfor %}</div></div>
+</div>
+<div class="cartao" style="margin-top:14px"><h2>Curva base 100</h2>{{ curvas|safe }}
+  <p class="sub">Números {{ 'DEMO' if demo else 'reais' }} · TWR com fluxos no início do dia · dias com lacuna de preço não são interpolados: o retorno seguinte cobre o intervalo.</p></div>
+<div class="grade g3" style="margin-top:14px">
+  <div class="cartao"><h2>Por classe</h2>{{ por.classe|safe }}</div>
+  <div class="cartao"><h2>Brasil × exterior</h2>{{ por.pais|safe }}</div>
+  <div class="cartao"><h2>Por moeda</h2>{{ por.moeda|safe }}
+    <p class="sub">Exposição econômica ao dólar (inclui receita em dólar das empresas): <b>{{ rk.exposicao_usd_economica_pct|num(1) }}%</b></p></div>
+</div>
+<div class="cartao" style="margin-top:14px"><h2>Nível 1 · alocação do patrimônio</h2>
+  <table><tr><th>Grupo</th><th class="n">Real</th><th class="n">Alvo</th><th class="n">Banda</th></tr>
+  {% for g, w in nivel1.alocacao_pct.items() %}<tr><td>{{ g }}</td><td class="n">{{ w|num(1) }}%</td>
+    <td class="n">{{ nivel1.alvos[g].alvo ~ '%' if g in nivel1.alvos else '—' }}</td><td class="n">{{ '± ' ~ nivel1.alvos[g].banda if g in nivel1.alvos else '—' }}</td></tr>{% endfor %}</table>
+  {% if not nivel1.alvos %}<p class="sub">Bandas do nível 1 desligadas (config/risco.toml): ligue quando todo o patrimônio — renda fixa, fundos, cripto — estiver no razão.</p>{% endif %}</div>
+{% endif %}
+{% endblock %}

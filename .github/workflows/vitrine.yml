@@ -1,0 +1,49 @@
+name: vitrine
+# Publica no GitHub Pages a VITRINE do painel: só a base DEMO (tickers e preços fictícios),
+# gerada aqui a partir do código. Nunca lê a pasta de dados reais, que fica fora deste repositório.
+# Ativação (uma vez): Settings → Pages → Build and deployment → Source: GitHub Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: vitrine
+  cancel-in-progress: true
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[painel]"
+      - name: Gerar a base demo e exportar o painel
+        run: |
+          python -m rvlocal demo --destino "$RUNNER_TEMP/demo"
+          RVLOCAL_HOME="$RUNNER_TEMP/demo" python -m rvlocal painel --exportar site
+          touch site/.nojekyll
+      - name: Conferir que só há dados DEMO
+        run: |
+          for f in $(find site -name '*.html'); do grep -q 'DADOS DEMO' "$f" || { echo "sem selo DEMO: $f"; exit 1; }; done
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

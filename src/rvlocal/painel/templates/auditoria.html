@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block titulo %}Auditoria{% endblock %}
+{% block corpo %}
+<p class="rotulo">Auditoria de decisões</p><h1>Toda operação contra o seu próprio checklist.</h1>
+<p class="sub">Completude média: <b>{{ (media * 100)|round|int if media is not none else '—' }}%</b> · operação sem tese vale zero · risco-retorno mínimo {{ rr_min }} · a crítica escrita do Agente Auditor entra no Ciclo 3; a pontuação já é do código.</p>
+<div class="cartao tabela" style="margin-top:12px"><table>
+<tr><th>Data</th><th>Operação</th>{% for c, rot in linhas[0].itens if linhas %}<th class="n" title="{{ rot }}">{{ loop.index }}</th>{% endfor %}<th class="n">Total</th><th>Decisão</th></tr>
+{% for l in linhas %}<tr><td>{{ l.o.data|data }}</td><td><b>{{ l.o.tipo }} {{ l.o.ativo }}</b> <span class="sub">{{ l.o.qtd|num(0) }} × {{ l.o.preco|num(2) }}</span></td>
+{% for c, rot in l.itens %}<td class="n" title="{{ rot }}: {{ l.chk.get(c) }}">{{ '✓' if l.chk.get(c) not in (none, '', []) else '✗' }}</td>{% endfor %}
+<td class="n {{ 'neg' if l.frac < 1 }}">{{ (l.frac * 9)|round|int }}/9</td>
+<td class="sub">{% if l.dec %}{{ l.dec.id }} · {{ l.dec.motivo }}{% if l.chk.risco_retorno is number and l.chk.risco_retorno < rr_min and l.o.tipo == 'compra' %} · <b class="neg">R:R {{ l.chk.risco_retorno }}</b>{% endif %}{% else %}sem decisão vinculada{% endif %}</td></tr>
+{% else %}<tr><td class="vazio">Nenhuma operação.</td></tr>{% endfor %}</table></div>
+<p class="sub">Itens: {% for c, rot in (linhas[0].itens if linhas else []) %}{{ loop.index }}. {{ rot }}{{ ' · ' if not loop.last }}{% endfor %}</p>
+{% endblock %}

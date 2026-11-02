@@ -1,0 +1,23 @@
+{
+  "ativo": "WEGE3",
+  "titulo": "Exportadora industrial de qualidade",
+  "tese": "Metade da receita no exterior e retorno sobre capital alto e estável; dólar forte amplia margem.",
+  "fundamentacao": "ROIC acima de 25% por 10 anos; balanço com caixa líquido.",
+  "vantagens": ["escala", "marca", "distribuição global"],
+  "riscos": ["desaceleração industrial global", "real forte"],
+  "catalisadores": ["resultado trimestral", "dólar"],
+  "horizonte": "24 meses",
+  "preco_justo": 52.0,
+  "metodo_valuation": "DCF (FCFF), WACC 11%",
+  "cenarios": {"otimista": {"preco": 62.0, "prob": 0.25},
+               "base": {"preco": 52.0, "prob": 0.5},
+               "pessimista": {"preco": 34.0, "prob": 0.25}},
+  "muda_de_ideia_se": "ROIC abaixo de 18% por dois trimestres seguidos",
+  "nivel_compra": 42.0,
+  "alvo": 55.0,
+  "stop": 36.0,
+  "rating": "BUY",
+  "conviccao": 4,
+  "proxima_revisao": "2027-02-15",
+  "origem": "usuario"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "H-EXP-USD",
+  "titulo": "Exportadoras batem o Ibovespa em dia de dólar em alta",
+  "tese": "Receita em dólar: WEGE3 rende mais que o índice quando o dólar sobe 0,3% ou mais.",
+  "teste": {"tipo": "excesso_em_condicao", "ativos": ["WEGE3"], "benchmark": "IBOV",
+            "condicao": {"serie": "USDBRL", "sinal": "alta", "limiar_pct": 0.3}},
+  "muda_de_ideia_se": "IC95 abaixo de 50% com 8 ou mais gates",
+  "origem": "usuario"
+}

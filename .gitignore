@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.tmp
+.pytest_cache/
+/demo/
+/painel-estatico/
+.env
+*.migrado
+*.egg-info/
+.rvlocal-home

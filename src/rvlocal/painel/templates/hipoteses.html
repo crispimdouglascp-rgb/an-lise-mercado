@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block titulo %}Hipóteses{% endblock %}
+{% block corpo %}
+<p class="rotulo">Placar de hipóteses</p><h1>Cada hipótese, com o teste escrito antes.</h1>
+<p class="sub">Regras: limiar de ±{{ limiar.limiar_pp|num(2) }} pp (entre os dois: neutro) · veredito só com {{ limiar.min_gates }}+ gates · intervalo de Wilson a 95% contra 50% · só pontua a partir da data de formulação · ponto é linha imutável · hipótese da IA só pontua depois do seu sim.</p>
+<div class="grade g2" style="margin-top:12px">
+{% for p in placar %}
+<div class="cartao" style="border-left:4px solid {{ 'var(--verde)' if p.veredito == 'confirmada' else 'var(--vermelho)' if p.veredito == 'refutada' else 'var(--ambar)' }}">
+  <h2>{{ p.titulo }}</h2>
+  <span class="pilula {{ 'sim' if p.veredito == 'confirmada' else 'nao' if p.veredito == 'refutada' else 'media' }}">{{ p.veredito }}</span>
+  <span class="pilula">{{ p.id }}</span> <span class="pilula roxa">origem {{ p.origem }}</span> <span class="pilula">{{ p.status }}</span>
+  {% if p.sugestao %}<span class="pilula cheia">sugestão: {{ p.sugestao }} (a decisão é sua)</span>{% endif %}
+  {% if p.h.tese %}<p>{{ p.h.tese }}</p>{% endif %}
+  <p class="num">a favor {{ p.favor }} · contra {{ p.contra }} · neutro {{ p.neutro }} · taxa {{ p.taxa_pct|num(1) if p.taxa_pct is not none else '—' }}%
+    {% if p.ic95_pct %}· IC95 [{{ p.ic95_pct[0]|num(1) }}%, {{ p.ic95_pct[1]|num(1) }}%]{% endif %}</p>
+  {% if p.ic95_pct %}<div class="ic"><span class="faixa" style="left:{{ p.ic95_pct[0] }}%;width:{{ p.ic95_pct[1]-p.ic95_pct[0] }}%"></span><span class="meio"></span>
+    <span class="ponto" style="left:{{ p.taxa_pct }}%"></span></div><p class="sub">a linha central é a moeda (50%)</p>{% endif %}
+  <div class="pontos" title="últimos pontos: verde a favor, vermelho contra, cinza neutro">{% for x in p.recentes %}<span class="{{ x.veredito }}" title="{{ x.data }}: {{ x.detalhe }}"></span>{% endfor %}</div>
+  <p class="ev"><b>Teste:</b> <code>{{ p.h.teste }}</code><br><b>Muda de ideia se:</b> {{ p.h.muda_de_ideia_se or '—' }} · formulada em {{ p.formulada_em|data }}</p>
+  {% if p.legado %}<p class="sub">Legado (fase 1, sem limiar, congelado): {{ p.legado.acertos }} acertos / {{ p.legado.erros }} erros.</p>{% endif %}
+</div>
+{% else %}<p class="vazio">Nenhuma hipótese. Veja prompts/hipotese_nova.md.</p>{% endfor %}
+</div>
+{% endblock %}

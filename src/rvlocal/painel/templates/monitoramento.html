@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% block titulo %}Mesa e monitoramento{% endblock %}
+{% block corpo %}
+<p class="rotulo">Monitoramento · mesa de pendências</p><h1>O que exige a sua decisão.</h1>
+<div class="grade g2">
+<div class="cartao"><h2>Na sua mesa</h2>
+{% for a in mesa %}
+  <div style="border-bottom:1px solid var(--linha);padding:10px 0">
+    <span class="pilula {{ 'nao' if a.status == 'vencido' else 'media' }}">{{ a.status }}</span>
+    <span class="pilula {{ 'nao' if a.severidade == 'alta' else 'media' }}">{{ a.severidade }}</span>
+    <span class="pilula">{{ a.regra }}</span> <span class="sub">{{ a.id }} · aberta {{ a.data|data }} · prazo {{ a.prazo|data }}</span>
+    <p style="margin:6px 0"><b>Motivo:</b> {{ a.motivo }}<br><b>Ação que exige sua avaliação:</b> {{ a.acao_requerida }}<br>
+      <span class="sub">Evidência: {{ a.evidencia }}</span></p>
+    {% if not estatico %}
+    <form class="dec" method="post" action="/decisao">
+      <input type="hidden" name="alerta_id" value="{{ a.id }}"><input type="hidden" name="ativo" value="{{ a.ativo or '' }}">
+      <input type="hidden" name="data" value="{{ hoje }}"><input type="hidden" name="c" value="{{ CARTEIRA.id }}">
+      <select name="tipo">{% for t in tipos %}<option {{ 'selected' if (t == 'stop' and 'stop' in a.regra) or (t == 'realizacao' and 'realizacao' in a.regra) or (t == 'revisao' and 'stop' not in a.regra and 'realizacao' not in a.regra) }}>{{ t }}</option>{% endfor %}</select>
+      <input name="decisao" placeholder="decisão (ex.: manter, reduzir 1/3)" required>
+      <input name="motivo" placeholder="por quê" required>
+      <input name="nova_invalidacao" placeholder="nova invalidação (se manter)">
+      <button type="submit">Registrar decisão</button>
+    </form>{% endif %}
+  </div>
+{% else %}<p class="vazio">Nenhuma pendência aberta.</p>{% endfor %}
+<p class="sub">Registrar a decisão grava uma linha no livro de decisões. Nenhuma ordem é enviada.</p>
+</div>
+<div class="cartao"><h2>Cobrança da manhã</h2>
+<ul class="lista">{% for i in cobranca %}<li><span class="pilula {{ 'nao' if i.urgencia == 'alta' else 'media' if i.urgencia == 'media' else '' }}">{{ i.urgencia }}</span><span>{{ i.texto }}</span></li>
+{% else %}<li class="vazio">Nada a cobrar.</li>{% endfor %}</ul></div>
+</div>
+<div class="grade g2" style="margin-top:14px">
+<div class="cartao"><h2>Alertas da vigilância (último pregão)</h2>
+  <ul class="lista">{% for a in alertas %}<li><span class="pilula">{{ a.hora }}</span><span>{{ a.texto }}</span></li>{% else %}<li class="vazio">Sem alertas intradiários registrados.</li>{% endfor %}</ul>
+  <h3>Pendências encerradas recentes</h3>
+  <ul class="lista">{% for a in fechadas %}<li><span class="pilula {{ 'sim' if a.status == 'resolvido' and a.no_prazo else 'media' }}">{{ a.status }}{{ ' com atraso' if a.status == 'resolvido' and not a.no_prazo }}</span><span>{{ a.motivo }} <span class="sub">{{ a.fechado_em|data }}</span></span></li>{% endfor %}</ul></div>
+<div class="cartao tabela"><h2>Heartbeat das rotinas</h2>
+  <table><tr><th>Rotina</th><th>Início</th><th>Status</th></tr>
+  {% for h in heartbeat %}<tr><td>{{ h.rotina }}</td><td class="n">{{ h.inicio[:16]|replace('T', ' ') }}</td><td><span class="pilula {{ 'sim' if h.status == 'ok' else 'nao' if h.status == 'erro' else 'media' }}">{{ h.status }}</span> <span class="sub">{{ h.erro or '' }}</span></td></tr>{% endfor %}</table>
+  <p class="sub">Rotina esperada que não rodou vira item da cobrança das 07:45 (alarme de falha).</p></div>
+</div>
+{% endblock %}

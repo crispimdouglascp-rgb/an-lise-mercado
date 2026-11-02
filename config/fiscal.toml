@@ -1,0 +1,18 @@
+# Regras fiscais (pessoa física). A VALIDAR COM O SEU CONTADOR: a plataforma calcula e mostra
+# a memória de cálculo, mas não substitui a orientação profissional.
+
+isencao_acoes_vendas_mes = 20000.0   # ações no mercado à vista, operações comuns
+irrf_swing_pct = 0.005               # IRRF sobre vendas comuns, abatido do imposto do mês
+darf_minimo = 10.0                   # abaixo disso, acumula para o mês seguinte
+
+[aliquotas]   # % sobre o lucro tributável
+acoes = 15
+bdr = 15
+etf = 15
+fii = 20
+day_trade = 20
+
+[grupos_compensacao]   # prejuízo só compensa lucro do mesmo grupo
+comum = ["acoes", "bdr", "etf"]
+fii = ["fii"]
+day_trade = ["day_trade"]

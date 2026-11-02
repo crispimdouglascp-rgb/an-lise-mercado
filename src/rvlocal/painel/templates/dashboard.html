@@ -1,0 +1,83 @@
+{% extends "base.html" %}{% block titulo %}Capa{% endblock %}
+{% block corpo %}
+{% if vazio %}
+<p class="rotulo">Capa</p><h1>Nenhum fechamento ainda.</h1>
+<div class="cartao"><p>Os livros ainda não têm fechamento. Cadastre os instrumentos, registre a carteira com
+<code>python -m rvlocal operar</code> e rode <code>python -m rvlocal fechar</code>. Para explorar, gere a base demo:
+<code>python -m rvlocal demo</code>.</p></div>
+{% else %}
+<p class="rotulo">Capa do pregão · {{ d.data|data }}</p>
+<h1>Tudo num lugar só, ao fim do dia.</h1>
+<div class="destaque {{ 'alerta' if n_vencidas }}">{{ destaque }}</div>
+
+<div class="grade g4">
+  <div class="cartao kpi"><div class="l">PATRIMÔNIO · R$</div><div class="v num">{{ d.patrimonio|brl(0) }}</div>
+    <div class="d">dia <b class="{{ d.retorno_dia_pct|cls }}">{{ d.retorno_dia_pct|pct }}</b> · Ibovespa {{ d.ibov_dia_pct|pct }}</div></div>
+  <div class="cartao kpi"><div class="l">CONSOLIDADA · MÊS · TWR</div><div class="v {{ mes.consolidada|cls }}">{{ mes.consolidada|pct }}</div>
+    <div class="d">acumulado desde o início {{ d.retorno_acumulado_pct|pct }}</div></div>
+  <div class="cartao kpi k2"><div class="l">RV BRASIL · MÊS</div><div class="v {{ mes.br|cls }}">{{ mes.br|pct }}</div>
+    <div class="d">Ibovespa {{ mes.ibov|pct }}</div></div>
+  <div class="cartao kpi k3"><div class="l">RV EXTERIOR · MÊS · EM R$</div><div class="v {{ mes.ext|cls }}">{{ mes.ext|pct }}</div>
+    <div class="d">{{ mes.ext_local|pct }} em US$ · S&amp;P 500 {{ mes.spx|pct }}</div></div>
+</div>
+
+<div class="grade g2" style="margin-top:14px">
+  <div class="cartao"><h2>Resultado do mês × benchmarks</h2>{{ curvas|safe }}
+    <p class="sub">Base 100 no primeiro pregão do mês · retorno ponderado pelo tempo · aportes não inflam o retorno.</p></div>
+  {% if boletim %}
+  <div class="cartao escuro">
+    <p class="rotulo" style="color:#B9B1F7">Boletim do gestor · semana {{ boletim.inicio|data }}</p>
+    <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
+      <div class="letra {{ boletim.letra }}">{{ boletim.letra }}</div>
+      <div><div class="num" style="font-size:26px">{{ boletim.nota_final|num(3) }} / 5</div>
+        <div class="sub">{% for f, l, n in historico_notas %}{{ l }} {{ n|num(2) }}{{ ' → ' if not loop.last }}{% endfor %}</div></div>
+    </div>
+    <table style="margin-top:10px;color:inherit">
+      <tr><th>Critério</th><th class="n">Peso</th><th class="n">Nota</th><th></th></tr>
+      {% for k in ORDEM %}{% set c = boletim.criterios[k] %}
+      <tr><td>{{ c.nome }}</td><td class="n">{{ c.peso }}%</td>
+        <td class="n {{ 'nota0' if c.nota == 0 }}">{{ c.nota|num(1) if c.nota is not none else 'sem base' }}</td>
+        <td class="seta {{ 'up' if c.seta == '↑' else 'down' if c.seta == '↓' }}">{{ c.seta or '' }}</td></tr>
+      {% endfor %}
+    </table>
+    {% for t in boletim.tetos_aplicados %}<p class="sub">teto: {{ t }}</p>{% endfor %}
+    <p class="sub">Avaliado como gestor: retorno é 15% da nota, processo é 85%. <a href="{{ link('relatorios') }}">evidências →</a></p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="grade g3" style="margin-top:14px">
+  <div class="cartao"><h2>Na sua mesa {% if n_vencidas %}<span class="pilula nao">{{ n_vencidas }} vencida(s)</span>{% endif %}</h2>
+    {% if pendencias %}<ul class="lista">{% for a in pendencias %}
+      <li><span class="pilula {{ 'nao' if a.status == 'vencido' else 'media' }}">{{ a.status }}</span>
+        <span>{{ a.motivo }} <span class="sub">· prazo {{ a.prazo|data }}</span></span></li>{% endfor %}</ul>
+    {% else %}<p class="vazio">Nenhuma pendência.</p>{% endif %}
+    <p><a href="{{ link('monitoramento') }}">registrar decisões →</a></p></div>
+  <div class="cartao"><h2>Status dos agentes e rotinas</h2>
+    <ul class="lista">{% for r in status %}
+      <li><span class="pilula {{ 'sim' if r.status == 'ok' else ('media' if r.status else 'nao') if r.motor == 'código' or r.status else '' }}">
+        {{ ('rodou ' ~ r.rodou) if r.rodou else ('não rodou' if r.motor == 'código' else 'Ciclo 3') }}</span>
+        <span><b>{{ r.nome }}</b> <span class="sub">{{ r.horario }} · {{ r.motor }}</span></span></li>{% endfor %}</ul></div>
+  <div class="cartao"><h2>Hipóteses em acompanhamento</h2>
+    <ul class="lista">{% for p in placar %}
+      <li><span class="pilula {{ 'sim' if p.veredito == 'confirmada' else 'nao' if p.veredito == 'refutada' else 'roxa' }}">{{ p.veredito }}</span>
+        <span>{{ p.titulo }} <span class="sub">· {{ p.favor }}×{{ p.contra }} · origem {{ p.origem }}</span></span></li>{% else %}
+      <li class="vazio">Nenhuma hipótese registrada.</li>{% endfor %}</ul>
+    <p><a href="{{ link('hipoteses') }}">placar completo →</a></p></div>
+</div>
+
+<div class="grade g3" style="margin-top:14px">
+  <div class="cartao"><h2>Exposição e concentração</h2><h3>Por classe</h3>{{ classe|safe }}<h3>Por setor (teto marcado)</h3>{{ setor|safe }}</div>
+  <div class="cartao"><h2>Alertas do dia</h2>
+    {% if alertas %}<ul class="lista">{% for a in alertas %}<li><span class="pilula">{{ a.hora }}</span><span>{{ a.texto }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="vazio">Sem alertas da vigilância intradiária neste pregão.</p>{% endif %}
+    <h3>Regras no fechamento</h3>
+    {% for v in d.violacoes if v.severidade != 'info' %}<p class="ev"><span class="pilula {{ 'nao' if v.severidade == 'alta' else 'media' }}">{{ v.severidade }}</span> {{ v.detalhe }}</p>
+    {% else %}<p class="vazio">Sem violações.</p>{% endfor %}</div>
+  <div class="cartao"><h2>Últimas decisões registradas</h2>
+    <ul class="lista">{% for x in decisoes %}<li><span class="pilula">{{ x.tipo }}</span>
+      <span><b>{{ x.ativo or '' }}</b> {{ x.decisao }} <span class="sub">· {{ x.data|data }} · {{ x.motivo }}</span></span></li>
+    {% else %}<li class="vazio">Nenhuma decisão.</li>{% endfor %}</ul></div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{
+  "WEGE3": {"nome": "WEG", "classe": "acao", "moeda": "BRL", "pais": "BR", "setor": "industria",
+            "fatores": ["exportadora"], "receita_usd_pct": 50},
+  "ITUB4": {"nome": "Itaú Unibanco", "classe": "acao", "moeda": "BRL", "pais": "BR", "setor": "bancos",
+            "fatores": ["ciclo_domestico"]},
+  "BOVA11": {"nome": "ETF Ibovespa", "classe": "etf", "moeda": "BRL", "pais": "BR", "setor": "indice_br"},
+  "VOO": {"nome": "Vanguard S&P 500", "classe": "etf_ext", "moeda": "USD", "pais": "US", "setor": "indice_eua"}
+}

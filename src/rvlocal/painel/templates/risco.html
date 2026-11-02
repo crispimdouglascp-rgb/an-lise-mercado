@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% block titulo %}Risco{% endblock %}
+{% block corpo %}
+<p class="rotulo">Gestão de risco · {{ rk.data|data }}</p><h1>Código, não modelo. Informação, nunca ordem.</h1>
+{% if not rk %}<p class="vazio">Sem medição de risco (precisa de um dia com patrimônio completo).</p>{% else %}
+{% if rk.bandas %}<div class="destaque alerta">{% for b in rk.bandas %}{{ b.detalhe }}{{ ' · ' if not loop.last }}{% endfor %}</div>{% endif %}
+<div class="grade g4">
+  <div class="cartao kpi"><div class="l">VOLATILIDADE ANUAL · 60D</div><div class="v">{{ rk.volatilidade.anual_60d_pct|num(1) ~ '%' if rk.volatilidade.anual_60d_pct is defined else 'insuf.' }}</div><div class="d">EWMA {{ rk.volatilidade.anual_ewma_pct|num(1) if rk.volatilidade.anual_ewma_pct is defined else '—' }}%</div></div>
+  <div class="cartao kpi k2"><div class="l">VAR 95% · 1 DIA</div>
+    {% if rk.var95_1d.status is defined %}<div class="v">insuficiente</div><div class="d">{{ rk.var95_1d.obs }} de {{ rk.var95_1d.minimo }} pregões (nunca estimado)</div>
+    {% else %}<div class="v">{{ rk.var95_1d.brl|brl(0) }}</div><div class="d">{{ rk.var95_1d.pct|num(2) }}% · CVaR {{ rk.var95_1d.cvar_pct|num(2) }}% (limite {{ lim.var95_max_pct }}%)</div>{% endif %}</div>
+  <div class="cartao kpi k3"><div class="l">BETA × IBOVESPA</div><div class="v">{{ rk.beta_ibov|num(2) if rk.beta_ibov is number else 'insuf.' }}</div><div class="d">HHI {{ rk.hhi|num(3) }} · n efetivo {{ rk.n_efetivo }}</div></div>
+  <div class="cartao kpi k4"><div class="l">DRAWDOWN DA CARTEIRA</div><div class="v {{ rk.drawdown_carteira.atual_pct|cls }}">{{ rk.drawdown_carteira.atual_pct|pct }}</div><div class="d">máximo {{ rk.drawdown_carteira.maximo_pct|pct }} · limite −{{ lim.drawdown_max_pct }}%</div></div>
+</div>
+<div class="grade g3" style="margin-top:14px">
+  <div class="cartao"><h2>Pesos por posição (teto marcado)</h2>{{ pesos|safe }}</div>
+  <div class="cartao"><h2>Exposição por fator (teto {{ lim.teto_fator_pct }}%)</h2>{{ fator|safe }}
+    <p class="sub">Exposição econômica ao dólar: <b>{{ rk.exposicao_usd_economica_pct|num(1) }}%</b> (máx. {{ lim.exposicao_usd_max_pct }}%)</p></div>
+  <div class="cartao"><h2>Contribuição ao risco</h2>{% if contrib %}{{ contrib|safe }}<p class="sub">Vol. da carteira em 120 pregões: {{ rk.vol_carteira_120d_pct|num(1) }}%</p>{% else %}<p class="vazio">Insuficiente (mín. 60 pregões).</p>{% endif %}
+    {% if rk.correlacoes_mais_altas %}<h3>Correlações mais altas (120 pregões)</h3><ul class="ev">{% for a, b, c in rk.correlacoes_mais_altas %}<li>{{ a }} × {{ b }}: {{ c|num(2) }}</li>{% endfor %}</ul>{% endif %}</div>
+</div>
+<div class="grade g2" style="margin-top:14px">
+<div class="cartao tabela"><h2>Stress pré-registrado</h2>
+  <table><tr><th>Cenário</th><th class="n">P&amp;L</th><th class="n">% patrimônio</th><th>Mais afetados</th></tr>
+  {% for s in rk.stress %}<tr><td><b>{{ s.id }}</b> {{ s.nome }}<div class="sub">registrado em {{ s.registrado_em|data }}</div></td>
+    <td class="n {{ s.pnl_brl|cls }}">{{ s.pnl_brl|brl(0) }}</td><td class="n {{ s.pnl_pct|cls }}">{{ s.pnl_pct|pct }}</td>
+    <td class="sub">{% for a, v in s.por_ativo.items() %}{% if loop.index <= 3 %}{{ a }} {{ v|num(0) }}{{ ' · ' if loop.index < 3 }}{% endif %}{% endfor %}</td></tr>{% endfor %}</table>
+  <p class="sub">Limite de perda no pior cenário: −{{ lim.stress_perda_max_pct }}%. Cenários em config/stress.toml.</p></div>
+<div class="cartao tabela"><h2>Drawdown por ativo (252 pregões)</h2>
+  <table><tr><th>Ativo</th><th class="n">Atual</th><th class="n">Máximo</th></tr>
+  {% for a, d in rk.drawdown_ativos.items() %}<tr><td>{{ a }}</td><td class="n {{ d.atual_pct|cls }}">{{ d.atual_pct|pct }}</td><td class="n neg">{{ d.maximo_252d_pct|pct }}</td></tr>{% endfor %}</table>
+  <p class="sub">Liquidez: {{ rk.liquidez.motivo }}.</p></div>
+</div>
+{% endif %}
+{% endblock %}
