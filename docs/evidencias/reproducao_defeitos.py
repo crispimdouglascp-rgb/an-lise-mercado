@@ -1,10 +1,10 @@
 """Reproduz os defeitos D1, D2 e D3 do diagnóstico (docs/01-diagnostico.md, seção 4.2).
 
-Uso, a partir da raiz do repositório:
-    H=$(mktemp -d) && mkdir -p $H/data/diario $H/data/state && cp -r rv-local/config $H/
-    RVLOCAL_HOME=$H python docs/evidencias/reproducao_defeitos.py rv-local/src
-
-Não altera nada em rv-local/. Usa uma pasta temporária (RVLOCAL_HOME).
+Roda contra o CÓDIGO ORIGINAL (commit 9ddcfe4, pasta rv-local/). Os três defeitos já foram corrigidos;
+a regressão de cada um está em tests/test_correcoes.py. Para reproduzir o comportamento antigo:
+    git worktree add /tmp/rv-original 9ddcfe4
+    H=$(mktemp -d) && mkdir -p $H/data/diario $H/data/state && cp -r /tmp/rv-original/rv-local/config $H/
+    RVLOCAL_HOME=$H python docs/evidencias/reproducao_defeitos.py /tmp/rv-original/rv-local/src
 """
 import json, sys
 from datetime import datetime

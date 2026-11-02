@@ -282,31 +282,32 @@ Horários em `config/rotina.toml`, **com fuso explícito `America/Sao_Paulo`**.
 
 **[decisão D-3]** Onde as rotinas de código rodam: GitHub Actions (atual), uma máquina local (cron/systemd/launchd) ou uma VPS.
 
-## 14. Estrutura de pastas (evolução, não reescrita)
+## 14. Estrutura de pastas (como ficou no Ciclo 2)
+
+Os módulos originais foram **mantidos no lugar** (mudança mínima) e os novos ficaram ao lado, em vez da
+reorganização em subpacotes proposta inicialmente. A interface pública continua `python -m rvlocal`.
 
 ```
-rv-local/
-  config/      regras · series · feriados (atuais) + rotina · risco · stress · placar · fiscal · convencoes · fontes
-  data/
-    livros/    instrumentos.json · operacoes · decisoes · teses · hipoteses · placar_hipoteses · eventos · alertas · boletins · heartbeat (.jsonl)
-    mercado.db (fora do git)
-    gerado/    diario/ · risco/ · fatos/ · relatorios/ · painel/
-  src/rvlocal/
-    nucleo/    util · calendario · livros (append-only + verificação) · validacao
-    coleta/    fontes/ (yahoo, brapi, bcb, tesouro, cvm, fred, sec, cotahist) · coleta · series
-    carteira/  razao · desempenho (TWR por sleeve) · fiscal
-    vigilancia/ regras · vigilancia · risco · alertas (mesa)
-    teses/     fichas · valuation/ (dcf, multiplos, juro_implicito, cenarios, testes_rating)
-    hipoteses/ testes · placar (Wilson)
-    placar/    criterios · boletim
-    quant/     metricas · backtest · stress · experimentos
-    opcoes/    precificacao · gregas · estrategias · simulador
-    agentes/   executor · fatos · validador
-    painel/    app (FastAPI) · templates · exportar
-    cli.py
-  prompts/     briefing · flash · intradiario · auditor · encerramento · retro · boletim · tese
-  tests/
-  docs/
+config/       regras · series · feriados · risco · stress · placar · fiscal · rotina
+data/
+  livros/     instrumentos.json + operacoes · decisoes · teses · hipoteses · placar_hipoteses ·
+              eventos · alertas · boletins · heartbeat (.jsonl, só por acréscimo)
+  mercado.db  séries (SQLite)
+  gerado/     diario/ · risco/ · recaps/ · coleta/ · estado/   (vistas refeitas pelo código)
+src/rvlocal/
+  util · calendario · livros · instrumentos                      núcleo
+  fontes · coleta · series                                       01 coleta
+  razao · desempenho · fiscal                                    carteira
+  regras · risco · mesa · vigilancia · cobranca                  02 vigilância e risco
+  teses · decisoes · hipoteses                                   registro de processo
+  boletim                                                        04 placar
+  diario                                                         orquestra o fechamento
+  painel/ (app, dados, graficos, templates, static)              interface
+  demo · migrar · cli
+prompts/      recap_1815 (Agente 5) · hipotese_nova
+tests/        72 testes
+exemplos/     instrumentos, ficha de tese, hipótese
 ```
 
-A migração é feita **movendo e adaptando** os módulos atuais, com os 38 testes passando a cada passo. O formato atual de `operacoes.jsonl` continua sendo lido (campos novos são opcionais, com padrões BRL/B3).
+Interface: FastAPI + Jinja2 com **formulários HTML simples** (o HTMX recomendado não foi necessário) e
+gráficos em SVG gerados no servidor, que funcionam também na exportação estática.

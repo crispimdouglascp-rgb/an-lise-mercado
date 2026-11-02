@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RV Local · {% block titulo %}Painel{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>{{ css|safe }}</style>
+</head>
+<body>
+<header class="topo">
+  <a class="marca" href="{{ link('dashboard') }}">RV Local<small>PLATAFORMA PESSOAL</small></a>
+  {% if demo %}<span class="selo" title="Base fictícia: tickers e preços sintéticos">DADOS DEMO</span>{% endif %}
+  <nav class="abas">
+    {% for nome, rota, rot in TELAS %}<a href="{{ link(nome) }}" class="{{ 'ativa' if tela == nome }}">{{ rot }}</a>{% endfor %}
+    {% for nome, rot in CICLO3 %}<a href="{{ '#' if estatico else '/' ~ nome }}" class="off {{ 'ativa' if tela == nome }}" title="Ciclo 3">{{ rot }}</a>{% endfor %}
+  </nav>
+</header>
+<main>
+{% block corpo %}{% endblock %}
+<p class="rodape">
+  {% if data_ref %}dados até {{ data_ref|data }} · {% endif %}o código calcula; a IA interpreta · nenhuma ordem é enviada pela plataforma ·
+  {% if demo %}DADOS DEMO, fictícios · {% endif %}não constitui recomendação de investimento
+</p>
+</main>
+</body>
+</html>

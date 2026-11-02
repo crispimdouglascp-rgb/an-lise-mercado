@@ -1,0 +1,35 @@
+# Monitor de risco. Toda banda rompida vira pendência na mesa e pesa no boletim
+# (critério Gestão de risco, 20%). Ajuste aos seus limites (decisão D-7).
+
+[limites]
+teto_fator_pct = 45          # soma das posições expostas ao mesmo fator (ex.: juro_longo)
+exposicao_usd_max_pct = 60   # exposição econômica ao dólar (ativos em USD + receita em dólar)
+drawdown_max_pct = 15        # queda máxima da carteira desde o pico (TWR)
+var95_max_pct = 3.0          # VaR histórico 1 dia, 95% (só calculado com 250 pregões)
+stress_perda_max_pct = 20    # perda máxima tolerada no pior cenário de stress
+hhi_max = 0.20               # concentração (HHI das posições de renda variável)
+
+# Nível 1: alocação do patrimônio por grupo. Desligado por padrão: só faz sentido se TODO
+# o patrimônio (renda fixa, fundos, cripto) estiver registrado no razão.
+[nivel1]
+ativo = false
+# exemplo (da referência):
+# [nivel1.alvos]
+# RF = {alvo = 40, banda = 5}
+# RV = {alvo = 30, banda = 5}
+# Fundos = {alvo = 10, banda = 3}
+# Cripto = {alvo = 5, banda = 2}
+# Exterior = {alvo = 15, banda = 5}
+
+[grupos]   # classe do instrumento -> grupo do nível 1
+acao = "RV"
+etf = "RV"
+bdr = "RV"
+fii = "RV"
+opcao = "RV"
+acao_ext = "Exterior"
+etf_ext = "Exterior"
+rf = "RF"
+fundo = "Fundos"
+cripto = "Cripto"
+caixa = "Caixa"

@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block titulo %}Teses{% endblock %}
+{% block corpo %}
+<p class="rotulo">Teses · fichas versionadas</p><h1>Uma ficha por posição.</h1>
+{% if sem_ficha %}<div class="destaque alerta">Na carteira sem ficha: {{ sem_ficha|join(', ') }}. Sem tese, a qualidade da decisão vale zero no boletim.</div>{% endif %}
+<div class="grade g2">
+{% for c in cards %}{% set f = c.f %}
+<div class="ficha">
+  <div class="cab"><span class="tk">{{ f.ativo }}</span>
+    <span class="num {{ c.p.pl_pct|cls }}">{{ c.p.pl_pct|pct }}</span>
+    <span class="sub">{{ f.titulo }}</span>
+    <span class="rating {{ f.rating }}">{{ f.rating or '—' }}</span></div>
+  <div class="quad"><div><span>Preço atual</span><b class="num">{{ c.p.preco|num(2) }}</b></div><div><span>Preço médio</span><b class="num">{{ c.p.pm|num(2) }}</b></div>
+    <div><span>Preço alvo</span><b class="num">{{ f.alvo|num(2) }}</b></div><div><span>Upside</span><b class="num {{ c.upside|cls }}">{{ c.upside|pct }}</b></div></div>
+  <div class="sec tese"><b>Sua tese</b> <span class="sub">· v{{ f.versao }} de {{ f.data|data }} · convicção {{ f.conviccao or '—' }}/5</span><br>{{ f.tese }}</div>
+  <div class="sec"><b>Valor:</b> preço justo {{ f.preco_justo|num(2) }} ({{ f.metodo_valuation or 'método não informado' }}) · margem de segurança <b class="{{ c.margem|cls }}">{{ c.margem|pct }}</b>
+    {% if c.ve %} · valor esperado dos cenários {{ c.ve|num(2) }}{% endif %}<br>
+    <span class="sub">{% for n, s in (f.cenarios or {}).items() %}{{ n }} {{ s.preco|num(2) }} ({{ (s.prob*100)|round|int }}%){{ ' · ' if not loop.last }}{% endfor %}</span></div>
+  <div class="sec"><b>Muda de ideia se:</b> {{ f.muda_de_ideia_se or '— não escrito' }}<br>
+    <b>Stop:</b> {{ f.stop|num(2) }} · <b>Nível de compra:</b> {{ f.nivel_compra|num(2) }} · <b>Horizonte:</b> {{ f.horizonte or '—' }}</div>
+  <div class="sec"><b>Riscos:</b> {{ (f.riscos or [])|join('; ') or '—' }}<br><b>Catalisadores:</b> {{ (f.catalisadores or [])|join('; ') or '—' }}</div>
+  <div class="sec"><b>Próxima revisão:</b> {{ f.proxima_revisao|data }} {% if c.vencida %}<span class="pilula nao">vencida</span>{% endif %}
+    <details><summary>Histórico da ficha · {{ c.hist|length }} versões</summary>
+      <ul class="ev">{% for h in c.hist %}<li>v{{ h.versao }} · {{ h.data|data }} · {{ h.motivo_mudanca or 'criação' }} · alvo {{ h.alvo|num(2) }} · stop {{ h.stop|num(2) }}{% if h.origem == 'ia' %} · <i>origem IA{{ ', confirmada' if h.confirmado_em else ', aguardando seu sim' }}</i>{% endif %}</li>{% endfor %}</ul>
+    </details></div>
+</div>
+{% else %}<p class="vazio">Nenhuma ficha. Grave uma com <code>python -m rvlocal tese --arquivo ficha.json</code>.</p>{% endfor %}
+</div>
+{% endblock %}

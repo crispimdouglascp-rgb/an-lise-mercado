@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rvlocal"
+version = "0.2.0"
+description = "Plataforma pessoal de gestão e análise de renda variável: o código calcula, a IA interpreta."
+requires-python = ">=3.11"
+dependencies = []   # o núcleo usa só a biblioteca padrão
+
+[project.optional-dependencies]
+painel = ["fastapi>=0.110", "uvicorn>=0.29", "jinja2>=3.1", "python-multipart>=0.0.9"]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"rvlocal.painel" = ["templates/*.html", "static/*.css"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

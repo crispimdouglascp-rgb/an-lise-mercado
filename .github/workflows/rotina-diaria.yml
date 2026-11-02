@@ -1,0 +1,81 @@
+name: rotina-diaria
+# Horários em BRT (America/Sao_Paulo) convertidos para UTC (BRT = UTC-3, sem horário de verão).
+# 07:45 cobrança | 08:20 manhã | 09:40 flash | 18:00 coleta do fechamento | 18:05 números do dia
+# sexta 19:00 boletim semanal | dia 1º 08:00 boletim mensal e trimestral + fiscal
+on:
+  # AGENDAMENTO DESLIGADO (decisão D-2): religar quando `rvlocal testar-fontes` passar ao vivo.
+  # schedule:
+  #   - cron: "45 10 * * 1-5"
+  #   - cron: "20 11 * * 1-5"
+  #   - cron: "40 12 * * 1-5"
+  #   - cron: "0 21 * * 1-5"
+  #   - cron: "5 21 * * 1-5"
+  #   - cron: "0 22 * * 5"
+  #   - cron: "0 11 1 * *"
+  workflow_dispatch:
+    inputs:
+      etapa:
+        description: "cobranca | manha | flash | fechamento | numeros | semanal | mensal"
+        required: true
+        default: "numeros"
+
+concurrency:
+  group: rvlocal-dados
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  rotina:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Definir etapa
+        id: etapa
+        run: |
+          if [ -n "${{ github.event.inputs.etapa }}" ]; then
+            echo "nome=${{ github.event.inputs.etapa }}" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ github.event.schedule }}" in
+              "45 10 * * 1-5") echo "nome=cobranca" >> "$GITHUB_OUTPUT" ;;
+              "20 11 * * 1-5") echo "nome=manha" >> "$GITHUB_OUTPUT" ;;
+              "40 12 * * 1-5") echo "nome=flash" >> "$GITHUB_OUTPUT" ;;
+              "0 21 * * 1-5")  echo "nome=fechamento" >> "$GITHUB_OUTPUT" ;;
+              "5 21 * * 1-5")  echo "nome=numeros" >> "$GITHUB_OUTPUT" ;;
+              "0 22 * * 5")    echo "nome=semanal" >> "$GITHUB_OUTPUT" ;;
+              "0 11 1 * *")    echo "nome=mensal" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+      - name: Validar livros (inclui imutabilidade contra o último commit)
+        env: { PYTHONPATH: src }
+        run: python -m rvlocal validar
+      - name: Executar etapa
+        env:
+          PYTHONPATH: src
+          BRAPI_TOKEN: ${{ secrets.BRAPI_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          case "${{ steps.etapa.outputs.nome }}" in
+            cobranca) python -m rvlocal cobranca ;;
+            manha|flash|fechamento) python -m rvlocal coletar --modo "${{ steps.etapa.outputs.nome }}" ;;
+            numeros) python -m rvlocal fechar && python -m rvlocal boletim --tipo diario ;;
+            semanal) python -m rvlocal boletim --tipo semanal ;;
+            mensal)
+              D=$(date -u -d "yesterday" +%F)
+              python -m rvlocal boletim --tipo mensal --data "$D"
+              python -m rvlocal boletim --tipo trimestral --data "$D"
+              python -m rvlocal fiscal --data "$D" ;;
+            *) echo "etapa desconhecida"; exit 1 ;;
+          esac
+      - name: Gravar estado
+        run: |
+          git config user.name "rv-local-bot"
+          git config user.email "rv-local-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || (git commit -m "rotina ${{ steps.etapa.outputs.nome }} $(date -u +%F)" && git pull --rebase && git push)

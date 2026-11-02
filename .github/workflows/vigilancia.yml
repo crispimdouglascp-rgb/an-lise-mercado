@@ -1,0 +1,41 @@
+name: vigilancia
+# Cron do GitHub roda em UTC. BRT = UTC-3. 09:45-18:15 BRT = 12:45-21:15 UTC.
+# O próprio código confere dia útil e janela; o cron só dispara.
+# O GitHub pode atrasar execuções agendadas em alguns minutos.
+on:
+  # AGENDAMENTO DESLIGADO (decisão D-2): religar quando `rvlocal testar-fontes` passar ao vivo.
+  # schedule:
+  #   - cron: "45,55 12 * * 1-5"
+  #   - cron: "*/10 13-20 * * 1-5"
+  #   - cron: "5,15 21 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: rvlocal-dados
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  vigiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Vigiar
+        env:
+          PYTHONPATH: src
+          BRAPI_TOKEN: ${{ secrets.BRAPI_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m rvlocal vigiar
+      - name: Gravar estado
+        run: |
+          git config user.name "rv-local-bot"
+          git config user.email "rv-local-bot@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || (git commit -m "vigilancia $(date -u +%FT%TZ)" && git pull --rebase && git push)

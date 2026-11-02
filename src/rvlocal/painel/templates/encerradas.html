@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block titulo %}Encerradas{% endblock %}
+{% block corpo %}
+<p class="rotulo">Operações encerradas e vendas</p><h1>O que já virou resultado.</h1>
+<div class="grade g3"><div class="cartao kpi k2"><div class="l">REALIZADO · R$</div><div class="v {{ realizado_brl|cls }}">{{ realizado_brl|brl(0) }}</div></div>
+<div class="cartao kpi k3"><div class="l">REALIZADO · US$</div><div class="v {{ realizado_usd|cls }}">US$ {{ realizado_usd|num(0) }}</div></div>
+<div class="cartao kpi k4"><div class="l">POSIÇÕES ZERADAS</div><div class="v">{{ encerradas|length }}</div></div></div>
+<div class="cartao tabela" style="margin-top:14px"><table>
+<tr><th>Data</th><th>Ativo</th><th class="n">Qtd</th><th class="n">PM</th><th class="n">Venda</th><th class="n">%</th><th class="n">Lucro</th><th>Decisão</th><th class="n">Checklist</th></tr>
+{% for v in linhas %}<tr><td>{{ v.data|data }}</td><td><b>{{ v.ativo }}</b> <span class="sub">{{ v.moeda }}</span></td><td class="n">{{ v.qtd|num(0) }}</td>
+<td class="n">{{ v.pm|num(2) }}</td><td class="n">{{ v.preco|num(2) }}</td><td class="n {{ v.pct|cls }}">{{ v.pct|pct }}</td>
+<td class="n {{ v.lucro|cls }}">{{ v.lucro|num(2) }}</td>
+<td>{% if v.decisao %}<span class="pilula">{{ v.decisao.tipo }}</span> <span class="sub">{{ v.decisao.motivo }}</span>{% else %}<span class="pilula nao">sem decisão</span>{% endif %}</td>
+<td class="n">{{ (v.completude * 9)|round|int }}/9</td></tr>
+{% else %}<tr><td colspan="9" class="vazio">Nenhuma venda.</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -1,0 +1,64 @@
+# Rotina operacional. Horários em America/Sao_Paulo (fuso explícito: a referência perdeu
+# dias com agendamentos rodando no horário de Londres).
+fuso = "America/Sao_Paulo"
+
+[[rotina]]
+nome = "cobranca"
+horario = "07:45"
+motor = "código"
+entrega = "O que o sistema precisa de mim: rotinas que falharam, pendências vencidas, fichas a revisar"
+
+[[rotina]]
+nome = "coleta_manha"
+horario = "08:20"
+motor = "código"
+entrega = "Coleta da madrugada + conferência do dólar contra o BCB"
+
+[[rotina]]
+nome = "briefing"
+horario = "08:30"
+motor = "IA"
+entrega = "Briefing matinal e hipóteses em jogo (Agente 1)"
+
+[[rotina]]
+nome = "flash"
+horario = "09:45"
+motor = "código + IA"
+entrega = "Só o que mudou antes da abertura"
+
+[[rotina]]
+nome = "vigilancia"
+horario = "09:45-18:15, a cada 10 min"
+motor = "código"
+entrega = "Alertas de stop, alvo, movimento fora do padrão, fonte congelada"
+
+[[rotina]]
+nome = "coleta_fechamento"
+horario = "18:00"
+motor = "código"
+entrega = "Fechamento conferido em duas fontes"
+
+[[rotina]]
+nome = "fechamento"
+horario = "18:05"
+motor = "código"
+entrega = "Patrimônio, TWR, regras, risco, placar de hipóteses, mesa, boletim diário"
+esperada = true
+
+[[rotina]]
+nome = "encerramento"
+horario = "18:15"
+motor = "IA"
+entrega = "Recap: hipóteses da manhã × realidade + auditoria (Agentes 5 e 4)"
+
+[[rotina]]
+nome = "semanal"
+horario = "sexta 19:00"
+motor = "código + IA"
+entrega = "Retrô + boletim semanal"
+
+[[rotina]]
+nome = "mensal"
+horario = "dia 1º"
+motor = "código + IA"
+entrega = "Relatório mensal, boletim mensal, apuração fiscal"

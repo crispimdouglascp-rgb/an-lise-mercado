@@ -1,0 +1,22 @@
+# Séries de contexto (macro e índice). Usadas nas hipóteses e no briefing.
+# Cada fonte listada é consultada e comparada. Com UMA só fonte configurada,
+# o dado é marcado fonte_unica_esperada (a plataforma não finge ter conferido).
+
+[IBOV]
+nome = "Ibovespa"
+yahoo = "^BVSP"
+brapi = "^BVSP"      # a conferir: nem todo plano da brapi libera índices
+
+[USDBRL]
+nome = "Dólar comercial"
+yahoo = "BRL=X"      # fonte única durante o dia
+# Conferência no dia seguinte: o BCB (SGS 1) é comparado ao fechamento de ontem
+# na coleta da manhã (comando coletar --modo manha). Divergência > 1% é sinalizada.
+
+[BRENT]
+nome = "Brent"
+yahoo = "BZ=F"       # fonte única na fase 1
+
+[SPX]
+nome = "S&P 500"
+yahoo = "^GSPC"      # benchmark da sleeve exterior; fonte única na fase atual

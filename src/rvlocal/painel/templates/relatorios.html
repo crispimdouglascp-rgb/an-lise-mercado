@@ -1,0 +1,48 @@
+{% extends "base.html" %}{% block titulo %}Boletins e relatórios{% endblock %}
+{% block corpo %}
+<p class="rotulo">Balanço · boletim do gestor</p>
+{% if not sel %}<h1>Nenhum boletim emitido.</h1><p class="vazio">Emita com <code>python -m rvlocal boletim --tipo semanal</code>.</p>{% else %}
+<h1>Toda nota cita evidência.</h1>
+<div class="grade g2">
+<div class="cartao">
+  <p class="sub">{{ sel.tipo }} · {{ sel.inicio|data }} a {{ sel.fim|data }} · edição {{ sel.edicao }}{{ ' (revisa ' ~ sel.revisa ~ ')' if sel.revisa }} · emitida {{ sel.emitido_em[:16]|replace('T', ' ') }}</p>
+  <div class="grade g3">
+    <div class="kpi"><div class="l">CARTEIRA</div><div class="v {{ semana.carteira|cls }}">{{ semana.carteira|pct }}</div></div>
+    <div class="kpi k2"><div class="l">BRASIL × IBOV</div><div class="v {{ semana.br|cls }}">{{ semana.br|pct }}</div><div class="d">Ibovespa {{ semana.ibov|pct }}</div></div>
+    <div class="kpi k3"><div class="l">EXTERIOR (US$) × S&amp;P</div><div class="v {{ semana.ext|cls }}">{{ semana.ext|pct }}</div><div class="d">S&amp;P 500 {{ semana.spx|pct }}</div></div>
+  </div>
+  <h3>Evolução da nota semanal</h3>{{ evolucao|safe }}
+</div>
+<div class="cartao escuro">
+  <p class="rotulo" style="color:#B9B1F7">Boletim do gestor · como você foi julgado</p>
+  <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
+    <div class="letra {{ sel.letra }}">{{ sel.letra }}</div>
+    <div><div class="num" style="font-size:26px">{{ sel.nota_final|num(3) }} / 5</div>
+      {% if sel.anterior %}<div class="sub">anterior: {{ sel.anterior.letra }} {{ sel.anterior.nota_final|num(3) }}</div>{% endif %}
+      {% if sel.cobertura.parcial %}<span class="pilula nao">PARCIAL: {{ sel.cobertura.com_dados }} de {{ sel.cobertura.pregoes }} pregões</span>{% else %}<div class="sub">julgado sobre {{ sel.cobertura.com_dados }} de {{ sel.cobertura.pregoes }} pregões</div>{% endif %}</div>
+  </div>
+  {% for t in sel.tetos_aplicados %}<p class="pilula cheia" style="margin-top:8px">teto: {{ t }}</p>{% endfor %}
+  {% if sel.sem_base %}<p class="sub">Sem base no período (peso redistribuído): {{ sel.sem_base|join(', ') }}</p>{% endif %}
+</div>
+</div>
+<div class="cartao tabela" style="margin-top:14px"><h2>Critérios, notas e evidências</h2>
+<table><tr><th>Critério</th><th class="n">Peso</th><th class="n">Nota</th><th class="n">Pts</th><th></th><th>O que o código encontrou</th></tr>
+{% for k in ORDEM %}{% set c = sel.criterios[k] %}<tr><td><b>{{ c.nome }}</b></td><td class="n">{{ c.peso }}%</td>
+<td class="n {{ 'nota0' if c.nota == 0 }}">{{ c.nota|num(1) if c.nota is not none else 'sem base' }}</td><td class="n">{{ c.pts|num(2) if c.pts is not none else '—' }}</td>
+<td class="seta {{ 'up' if c.seta == '↑' else 'down' if c.seta == '↓' }}">{{ c.seta or '' }}</td>
+<td><ul class="ev" style="margin:0;padding-left:16px">{% for e in c.evidencias %}<li>{{ e }}</li>{% endfor %}</ul></td></tr>{% endfor %}</table>
+<p class="sub">Regra ignorada = 0, sem crédito parcial · tetos só limitam, nunca sobem · o comentário da IA (Ciclo 3) não altera nenhuma nota.</p></div>
+{% endif %}
+<div class="grade g2" style="margin-top:14px">
+<div class="cartao tabela"><h2>Edições</h2>
+{% for t, eds in tipos.items() if eds %}<h3>{{ t }}</h3><table>
+{% for b in eds[::-1][:8] %}<tr><td>{% if estatico %}{{ b.inicio|data }}{% else %}<a href="/relatorios?b={{ b.id }}">{{ b.inicio|data }} a {{ b.fim|data }}</a>{% endif %}</td>
+<td><b>{{ b.letra }}</b></td><td class="n">{{ b.nota_final|num(3) }}</td><td class="sub">{{ 'parcial' if b.cobertura.parcial }} {{ 'e' ~ b.edicao }}</td></tr>{% endfor %}</table>{% endfor %}</div>
+<div class="cartao tabela"><h2>Fiscal · apuração mensal (estimativa)</h2>
+<table><tr><th>Mês</th><th class="n">Vendas ações</th><th class="n">Uso da isenção</th><th class="n">DARF</th><th>Vencimento</th></tr>
+{% for m in fiscal %}<tr><td>{{ m.mes }}</td><td class="n">{{ m.isencao_acoes.vendas|num(0) }}</td><td class="n">{{ m.isencao_acoes.uso_pct|num(0) }}%</td>
+<td class="n">{{ m.darf|brl }}</td><td>{{ m.vencimento|data if m.vencimento else '—' }}</td></tr>{% else %}<tr><td class="vazio">Sem vendas.</td></tr>{% endfor %}</table>
+<p class="sub">Cálculo da plataforma; valide com o seu contador. Registre o pagamento: <code>python -m rvlocal darf-pago --mes AAAA-MM</code>.</p>
+{% for n, t in recaps %}<h3>{{ n }}</h3><pre class="recap">{{ t }}</pre>{% endfor %}</div>
+</div>
+{% endblock %}

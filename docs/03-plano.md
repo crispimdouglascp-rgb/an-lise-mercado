@@ -11,9 +11,12 @@
 - [x] Três defeitos reproduzidos com script (D1, D2, D3)
 - [x] Arquitetura (`docs/02-arquitetura.md`)
 - [x] Plano (este documento)
-- [ ] **Suas decisões D-1 a D-8** (abaixo), que liberam o Ciclo 2
+- [x] Decisões D-1 a D-8: "siga as recomendações" (02/11/2026)
 
-## Ciclo 2: construção (carteira, teses, decisões, risco, placar)
+## Ciclo 2: construção (carteira, teses, decisões, risco, placar), CONCLUÍDO
+
+Status em 02/11/2026: todos os épicos entregues, 72 testes (38 originais + 34 novos), base demo gerada pelo
+código de produção. O que ficou de fora de cada épico está em "Pendências do Ciclo 2" abaixo.
 
 | # | Épico | Depende de | Cx. | Pronto quando |
 |---|---|---|---|---|
@@ -28,6 +31,15 @@
 | 2.8 | **Fiscal básico**: apuração mensal BR, isenção de R$ 20 mil, compensação, DARF | 2.1 | M | Apuração igual a 3 casos calculados à mão; memória de cálculo visível |
 
 Ordem sugerida: 2.0 → 2.1 → (2.2 ∥ 2.3 ∥ 2.4) → 2.5 → 2.6 → 2.7, com 2.8 em paralelo.
+
+### Pendências do Ciclo 2 (conhecidas)
+
+- Liquidez (dias para zerar) espera a coleta de volume (3.3); o monitor declara "sem dado".
+- Nível 1 do patrimônio está desligado por padrão: só faz sentido com renda fixa, fundos e cripto no razão.
+- Fiscal: day trade com lucro pelo PM da posição; exterior só informativo (apuração anual). Validar com contador.
+- Lançamento coberto e risco de opções no boletim entram com o módulo de opções (3.7).
+- Captura da carteira por print (visão) não foi feita; o registro é pelo `operar` ou pelo livro.
+- Fontes de preço continuam sem teste ao vivo (rede bloqueada aqui); agendamentos desligados até lá.
 
 ## Ciclo 3: inteligência (agentes, dados, quant, backtest, opções, automação)
 
@@ -54,7 +66,7 @@ Ordem sugerida: 2.0 → 2.1 → (2.2 ∥ 2.3 ∥ 2.4) → 2.5 → 2.6 → 2.7, c
 | **D-5** | Fontes pagas | brapi gratuito × brapi Pro (opções, fundamentos, histórico) | Começar no gratuito; assinar o Pro antes do 3.7 (opções) |
 | **D-6** | Universo e classes já no 2.1 | Ações BR, FII, ETF, BDR, ações EUA, opções, RF, cripto | Me diga quais você tem hoje; o cadastro aceita todas, mas os testes priorizam as reais |
 | **D-7** | Parâmetros | Limites de posição, setor e fator; bandas do nível 1; cenários de stress; escala de letras; limiar de hipótese (±0,75 pp) e mínimo de gates (8) | Revisar os valores propostos na arquitetura; ficam todos em `config/` |
-| **D-8** | Rede deste ambiente | Liberar `query1.finance.yahoo.com`, `brapi.dev`, `api.bcb.gov.br` (e depois `www.tesourodireto.com.br`, `dados.cvm.gov.br`, `api.stlouisfed.org`, `data.sec.gov`, `bvmf.bmfbovespa.com.br`) | Liberar, para eu validar as fontes daqui; senão, rodar `testar-fontes` na sua máquina e me mandar a saída |
+| **D-8** (pendente de ação sua) | Rede deste ambiente | Liberar `query1.finance.yahoo.com`, `brapi.dev`, `api.bcb.gov.br` (e depois `www.tesourodireto.com.br`, `dados.cvm.gov.br`, `api.stlouisfed.org`, `data.sec.gov`, `bvmf.bmfbovespa.com.br`) | Liberar, para eu validar as fontes daqui; senão, rodar `testar-fontes` na sua máquina e me mandar a saída |
 
 ## O que preciso de você para começar o Ciclo 2
 

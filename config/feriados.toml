@@ -1,0 +1,12 @@
+# Feriados da B3. A plataforma CALCULA os feriados nacionais (fixos e móveis pela
+# Páscoa) e os dias sem pregão (24/12 e 31/12) para qualquer ano.
+# Use este arquivo só para ajustes e para registrar o que você conferiu.
+#
+# 1. Confira o calendário oficial em b3.com.br (Calendário de negociação).
+# 2. Se a B3 fechar num dia não calculado, ponha em `extras`.
+#    Se abrir num dia calculado, ponha em `remover`.
+# 3. Acrescente o ano em `anos_conferidos`. Ano não conferido gera aviso diário.
+
+anos_conferidos = []
+extras = []
+remover = []

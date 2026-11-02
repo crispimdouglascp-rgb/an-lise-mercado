@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block titulo %}Posições{% endblock %}
+{% block corpo %}
+<p class="rotulo">Posições abertas · {{ data_ref|data }}</p><h1>Onde está cada real.</h1>
+<div class="cartao tabela">
+<table>
+<tr><th>Ativo</th><th>Classe</th><th class="n">Qtd</th><th class="n">PM</th><th class="n">Preço</th><th class="n">Dia</th><th class="n">Resultado</th>
+<th class="n">Valor (R$)</th><th class="n">Peso</th><th class="n">Alvo</th><th class="n">Até o alvo</th><th class="n">Stop</th><th class="n">Até o stop</th><th class="n">Margem seg.</th><th>Ficha</th></tr>
+{% for p in linhas %}
+<tr><td><b>{{ p.ativo }}</b><div class="sub">{{ p.nome }}</div></td><td>{{ p.classe }} · {{ p.moeda }}</td>
+<td class="n">{{ p.qtd|num(0) }}</td><td class="n">{{ p.pm|num(2) }}</td><td class="n">{{ p.preco|num(2) }}</td>
+<td class="n {{ p.dia_pct|cls }}">{{ p.dia_pct|pct }}</td><td class="n {{ p.pl_pct|cls }}">{{ p.pl_pct|pct }}</td>
+<td class="n">{{ p.valor_brl|num(0) }}</td><td class="n {{ 'neg' if p.peso_pct and p.peso_pct > teto }}">{{ p.peso_pct|num(1) }}%</td>
+<td class="n">{{ p.alvo|num(2) }}</td><td class="n">{{ p.dist_alvo_pct|pct }}</td><td class="n">{{ p.stop|num(2) }}</td>
+<td class="n {{ 'neg' if p.dist_stop_pct is not none and p.dist_stop_pct >= 0 }}">{{ p.dist_stop_pct|pct }}</td>
+<td class="n">{{ p.margem|pct }}</td>
+<td>{% if p.tese_id %}<span class="pilula {{ 'media' if p.revisao_vencida else 'sim' }}">{{ p.rating }} · c{{ p.conviccao }}</span>{% else %}<span class="pilula nao">sem ficha</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="15" class="vazio">Sem posições.</td></tr>{% endfor %}
+</table></div>
+<p class="sub">Preço = fechamento conferido em duas fontes (ou fonte única esperada). Ativo sem preço não é estimado. "Até o stop" positivo = já abaixo do stop. Teto de posição: {{ teto }}%.</p>
+{% endblock %}
