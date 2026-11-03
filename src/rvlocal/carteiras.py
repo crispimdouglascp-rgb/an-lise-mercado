@@ -116,6 +116,9 @@ def iniciar_base(destino, marcador=None) -> list[str]:
         "# Dados da plataforma RV Local\n\nPasta PRIVADA com os seus livros. Versione num repositório git "
         "PRIVADO (trilha de auditoria e backup):\n\n    git init && git add . && git commit -m 'base'\n\n"
         "Não coloque esta pasta dentro do repositório público do código.\n", encoding="utf-8")
+    cola = raiz_projeto() / "COLA.md"
+    if cola.exists():
+        shutil.copy(cola, d / "COLA.md")
     marcador = Path(marcador) if marcador else raiz_projeto() / ".rvlocal-home"
     marcador.write_text(str(d) + "\n", encoding="utf-8")
     return [str(d), str(marcador)]
