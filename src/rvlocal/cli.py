@@ -10,8 +10,12 @@ from . import diario, livros, razao
 
 
 def _hoje(a) -> date:
+    from datetime import timedelta
     from .util import hoje
-    return date.fromisoformat(a.data) if getattr(a, "data", None) else hoje()
+    d = getattr(a, "data", None)
+    if d == "ontem":
+        return hoje() - timedelta(days=1)
+    return date.fromisoformat(d) if d else hoje()
 
 
 def _validar(_a) -> int:
@@ -172,9 +176,17 @@ def _painel(a) -> int:
         for p in painel.exportar(a.exportar):
             print("gerado:", p)
         return 0
+    import threading
     import uvicorn
-    print(f"Painel em http://127.0.0.1:{a.porta}  (Ctrl+C para sair)")
-    uvicorn.run(painel.criar_app(), host=a.host, port=a.porta, log_level="warning")
+    from .util import raiz_base
+    url = f"http://127.0.0.1:{a.porta}"
+    print(f"Dados em: {raiz_base()}")
+    print(f"Painel em {url}  (deixe esta janela aberta; Ctrl+C para sair)")
+    if a.abrir:
+        import webbrowser
+        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    uvicorn.run(painel.criar_app(), host=a.host, port=a.porta, log_level="info")
+    print("Painel encerrado.")
     return 0
 
 
@@ -215,6 +227,23 @@ def _carteira_nova(a) -> int:
     from . import carteiras
     c = carteiras.criar(a.id, a.nome, a.tipo, a.benchmark, a.fonte, a.descricao, a.natureza)
     print(f"carteira {c['id']} criada ({c['tipo']}, natureza {c['natureza']}). Use: python -m rvlocal --carteira {c['id']} ...")
+    return 0
+
+
+def _onde(_a) -> int:
+    from . import carteiras
+    from .util import raiz_base, raiz_projeto
+    base = raiz_base()
+    demo = (base / "DADOS-DEMO.md").exists()
+    print(f"Código (programa):   {raiz_projeto()}")
+    print(f"Dados em uso:        {base}" + ("   <- BASE DEMO (fictícia)" if demo else
+          ("   <- pasta do código: rode 'rvlocal iniciar' para ter uma pasta só sua" if base == raiz_projeto() else "")))
+    print(f"Banco de preços:     {base / 'data' / 'mercado.db'}")
+    print(f"Universo de ativos:  {base / 'data' / 'livros' / 'instrumentos.json'}")
+    for c in carteiras.listar():
+        print(f"Carteira {c['id']:<12} {carteiras.pasta(c['id'])}  ({c['tipo']}, {c['natureza']})")
+    marcador = raiz_projeto() / ".rvlocal-home"
+    print(f"Indicador da pasta:  {marcador} " + ("(existe)" if marcador.exists() else "(não existe)"))
     return 0
 
 
@@ -274,7 +303,22 @@ def _reprocessar(a) -> int:
     return _todas(a, fn)
 
 
+def _sem_console_vai_para_log() -> None:
+    """Rodando por pythonw (agendador, inicialização do Windows) não há console: a saída vai para
+    data/gerado/rotinas.log na pasta de dados, em vez de se perder (ou derrubar o servidor)."""
+    if sys.stdout is not None and sys.stderr is not None:
+        return
+    from .util import raiz_base
+    log = raiz_base() / "data" / "gerado" / "rotinas.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    f = open(log, "a", encoding="utf-8", buffering=1)  # noqa: SIM115 - fica aberto até o fim do processo
+    from datetime import datetime
+    f.write(f"\n===== {datetime.now():%Y-%m-%d %H:%M:%S} rvlocal {' '.join(sys.argv[1:])}\n")
+    sys.stdout = sys.stderr = f
+
+
 def main(argv: list[str] | None = None) -> int:
+    _sem_console_vai_para_log()
     p = argparse.ArgumentParser(prog="rvlocal", description="RV Local: o código calcula; a IA interpreta.")
     p.add_argument("--carteira", help="id da carteira (padrão: principal). Liste com: rvlocal carteiras")
     sp = p.add_subparsers(dest="cmd", required=True)
@@ -391,8 +435,9 @@ def main(argv: list[str] | None = None) -> int:
     cn.set_defaults(f=_carteira_nova)
 
     ini = sp.add_parser("iniciar", help="cria a pasta PRIVADA de dados fora do repositório de código")
-    ini.add_argument("--destino", required=True, help="ex.: ~/rvlocal-dados")
+    ini.add_argument("--destino", default="~/RVLocal-dados", help="padrão: RVLocal-dados na sua pasta de usuário")
     ini.set_defaults(f=_iniciar)
+    sp.add_parser("onde", help="mostra onde estão o programa, os dados e cada carteira").set_defaults(f=_onde)
 
     at = sp.add_parser("ativo", help="inclui ou atualiza um ativo no universo (compartilhado)")
     at.add_argument("ticker")
@@ -443,6 +488,7 @@ def main(argv: list[str] | None = None) -> int:
     pn.add_argument("--porta", type=int, default=8765)
     pn.add_argument("--host", default="127.0.0.1")
     pn.add_argument("--exportar", help="pasta para exportar a capa e o balanço em HTML estático")
+    pn.add_argument("--abrir", action="store_true", help="abre o navegador automaticamente")
     pn.set_defaults(f=_painel)
 
     a = p.parse_args(argv)

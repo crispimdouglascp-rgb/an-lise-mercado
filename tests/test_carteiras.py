@@ -122,3 +122,18 @@ def test_iniciar_base_de_dados_privada(tmp_path):
     assert (tmp_path / ".rvlocal-home").read_text().strip() == str(destino.resolve())
     with pytest.raises(RuntimeError):
         carteiras.iniciar_base(destino, marcador=tmp_path / ".rvlocal-home")
+
+
+def test_iniciar_copia_a_cola(tmp_path):
+    destino = tmp_path / "d2"
+    carteiras.iniciar_base(destino, marcador=tmp_path / ".m")
+    assert "cola rápida" in (destino / "COLA.md").read_text(encoding="utf-8")
+
+
+def test_onde_e_data_ontem(base, capsys):
+    assert cli.main(["onde"]) == 0
+    assert "Dados em uso" in capsys.readouterr().out
+    import argparse
+    from datetime import timedelta
+    from rvlocal.util import hoje
+    assert cli._hoje(argparse.Namespace(data="ontem")) == hoje() - timedelta(days=1)
